@@ -1,9 +1,8 @@
-import { join } from 'https://deno.land/std@0.177.1/path/mod.ts';
-import { type Page } from 'https://deno.land/x/puppeteer@16.2.0/mod.ts';
+import { path, puppeteer } from '../deps.ts';
 
-export const createScreenhot = async (page: Page): Promise<void> => {
+export const createScreenhot = async (page: puppeteer.Page): Promise<void> => {
 	await page.screenshot({
-		path: join('screenshots', `${Date.now()}.jpeg`),
+		path: path.join('screenshots', `${Date.now()}.jpeg`),
 		type: 'jpeg',
 		fullPage: true,
 	});

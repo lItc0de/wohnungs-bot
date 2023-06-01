@@ -1,18 +1,18 @@
-import { DB } from 'https://deno.land/x/sqlite@v3.7.2/mod.ts';
-import { type PreparedQuery } from 'https://deno.land/x/sqlite@v3.7.2/src/query.ts';
+import { sqlite } from '../deps.ts';
 import { type FlatsRow, type Offer } from './definitions.d.ts';
 
 export default class DataBase {
-	static DBName = 'searchFlats.db';
+	// static DBName = 'searchFlats.db';
+	static DBName = Deno.env.get('DATABASE_URL');
 	static FlatsTable = 'flats';
 
-	private db: DB;
-	private createOfferQuery?: PreparedQuery<never, never, FlatsRow>;
-  private updateOfferQuery?: PreparedQuery<never, never, { id: string, wbs: boolean }>;
-	private relevantOffersQuery?: PreparedQuery<[string, string, number], never, { timestamp: number }>;
+	private db: sqlite.DB;
+	private createOfferQuery?: sqlite.PreparedQuery<never, never, FlatsRow>;
+  private updateOfferQuery?: sqlite.PreparedQuery<never, never, { id: string, wbs: boolean }>;
+	private relevantOffersQuery?: sqlite.PreparedQuery<[string, string, number], never, { timestamp: number }>;
 
 	constructor() {
-		this.db = new DB(DataBase.DBName);
+		this.db = new sqlite.DB(DataBase.DBName);
 
 		this.migrate();
 		this.prepareQueries();

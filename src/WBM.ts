@@ -1,4 +1,4 @@
-import { ElementHandle, type Page } from 'https://deno.land/x/puppeteer@16.2.0/mod.ts';
+import { puppeteer } from '../deps.ts';
 import searchConfig from '../search-config.json' assert { type: 'json' };
 import type DataBase from './database.ts';
 import { type Offer } from './definitions.d.ts';
@@ -11,11 +11,11 @@ export default class WBM {
 	static wbsTestRegexp = /WBS erforderlich:.*Nein/i;
 	static companyIdentifier = 'WBM';
 
-	private page: Page;
+	private page: puppeteer.Page;
 	private config: typeof searchConfig.searches[0];
 	private db: DataBase;
 
-	constructor(page: Page, config: typeof searchConfig.searches[0], db: DataBase) {
+	constructor(page: puppeteer.Page, config: typeof searchConfig.searches[0], db: DataBase) {
 		this.page = page;
 		this.config = config;
 		this.db = db;
@@ -30,18 +30,20 @@ export default class WBM {
 	}
 
 	async getAllOffers(): Promise<Offer[]> {
-		const offerElements = (await this.page.$$('.row .openimmo-search-list-item')) as ElementHandle<
-			HTMLDivElement
-		>[];
+		const offerElements =
+			(await this.page.$$('.row .openimmo-search-list-item')) as puppeteer.ElementHandle<
+				HTMLDivElement
+			>[];
 
 		const offers: Offer[] = [];
 
 		for (let i = 0; i < offerElements.length; i++) {
 			const offerElement = offerElements[i];
 
-			const mainPropertyList = (await offerElement.$('ul.main-property-list')) as ElementHandle<
-				HTMLUListElement
-			>;
+			const mainPropertyList =
+				(await offerElement.$('ul.main-property-list')) as puppeteer.ElementHandle<
+					HTMLUListElement
+				>;
 
 			const rent = await mainPropertyList.$eval(
 				'div.main-property-rent.main-property-value',
@@ -138,7 +140,7 @@ export default class WBM {
 
 			await this.fillForm();
 
-      await createScreenhot(this.page);
+			await createScreenhot(this.page);
 			// await this.submitForm();
 		}
 	}

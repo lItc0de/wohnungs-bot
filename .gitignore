@@ -45,15 +45,20 @@ testem.log
 *.njsproj
 *.sln
 *.sw?
-
 *inkscape.svg
 
 # System Files
 .DS_Store
 Thumbs.db
 
-.env
+# Database files
+*.db
+*.db-*
 
-screenshots
+# Envoronment files
+.env
+*.env
+
+# Other
 search-config.json
-searchFlats.db
+screenshots
