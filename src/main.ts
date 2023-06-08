@@ -51,4 +51,4 @@ const run = async () => {
 
 run();
 
-// setInterval(run, 5 * 60 * 1000);
+setInterval(run, 5 * 60 * 1000);
