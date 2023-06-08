@@ -73,12 +73,12 @@ export default class WBM {
 		return offers;
 	}
 
-	getRelevantOffers(timestamp: number): { id: string; url: string }[] {
-		return this.db.getRelevantOffers(timestamp)
+	async getRelevantOffers(timestamp: number): Promise<{ id: string; url: string }[]> {
+		return (await this.db.getRelevantOffers(timestamp))
 			// check number of rooms
-			.filter((offer) => offer[2] >= 2 || Number.isNaN(offer[2]))
+			.filter((offer) => offer.rooms >= 2 || Number.isNaN(offer.rooms))
 			// get links
-			.map((offer) => ({ id: offer[0], url: offer[1] }));
+			.map((offer) => ({ id: offer.id, url: offer.url }));
 	}
 
 	async checkNoWbs(id: string): Promise<boolean> {
@@ -112,10 +112,17 @@ export default class WBM {
 		await this.page.click('button[type="submit"]');
 	}
 
-	storeOffers(offers: Offer[]): void {
-		offers.forEach((offer) => {
-			this.db.createOffer(WBM.companyIdentifier, offer);
-		});
+	async storeOffers(offers: Offer[]): Promise<void> {
+		for (let i = 0; i < offers.length; i++) {
+			console.log('offer', i);
+
+			await this.db.createOffer(WBM.companyIdentifier, offers[i]);
+
+			console.log('after offer', i);
+		}
+		// offers.forEach((offer) => {
+		// 	this.db.createOffer(WBM.companyIdentifier, offer);
+		// });
 	}
 
 	async run(): Promise<void> {
@@ -124,9 +131,9 @@ export default class WBM {
 		await this.visitMainPage();
 
 		const offers = await this.getAllOffers();
-		this.storeOffers(offers);
+		await this.storeOffers(offers);
 
-		const relevantOffers = this.getRelevantOffers(currentTimestamp);
+		const relevantOffers = await this.getRelevantOffers(currentTimestamp);
 
 		console.log(relevantOffers);
 
@@ -140,8 +147,8 @@ export default class WBM {
 
 			await this.fillForm();
 
-			await createScreenhot(this.page);
-			// await this.submitForm();
+		// 	await createScreenhot(this.page);
+		// 	// await this.submitForm();
 		}
 	}
 }

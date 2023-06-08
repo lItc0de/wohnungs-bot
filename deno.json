@@ -4,7 +4,7 @@
     "run": "deno run -A src/main.ts"
   },
   "lint": {
-    "include": ["src/"],
+    "include": ["src/", "deps.ts"],
     "rules": {
       "tags": ["recommended"],
       "include": ["ban-untagged-todo"],
@@ -17,7 +17,7 @@
     "indentWidth": 2,
     "singleQuote": true,
     "proseWrap": "preserve",
-    "include": ["src/"]
+    "include": ["src/", "deps.ts"]
   },
   "compilerOptions": {
     "lib": [

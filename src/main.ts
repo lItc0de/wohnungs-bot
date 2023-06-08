@@ -12,13 +12,20 @@ class FlatsBot {
 	private db?: DataBase;
 
 	async init(): Promise<void> {
-		this.browser = await puppeteer.default.launch({
-			executablePath: '/usr/bin/google-chrome',
-		});
+		const isProd = Deno.env.get('PRODUCTION');
+
+		if (isProd) {
+			this.browser = await puppeteer.default.launch({
+				executablePath: '/usr/bin/google-chrome',
+			});
+		} else {
+			this.browser = await puppeteer.default.launch();
+		}
 
 		// this.browser = await puppeteer.default.launch();
 		this.page = await this.browser.newPage();
 		this.db = new DataBase();
+		await this.db.init();
 
 		this.wbmBot = new WBM(this.page, searchConfig.searches[0], this.db);
 	}
@@ -44,4 +51,4 @@ const run = async () => {
 
 run();
 
-setInterval(run, 5 * 60 * 1000);
+// setInterval(run, 5 * 60 * 1000);

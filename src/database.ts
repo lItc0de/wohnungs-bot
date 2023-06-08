@@ -1,81 +1,97 @@
-import { sqlite } from '../deps.ts';
-import { type FlatsRow, type Offer } from './definitions.d.ts';
+import { Client, env } from '../deps.ts';
+import { type Offer } from './definitions.d.ts';
 
 export default class DataBase {
-	// static DBName = 'searchFlats.db';
-	static DBName = Deno.env.get('DATABASE_URL');
-	static FlatsTable = 'flats';
-
-	private db: sqlite.DB;
-	private createOfferQuery?: sqlite.PreparedQuery<never, never, FlatsRow>;
-  private updateOfferQuery?: sqlite.PreparedQuery<never, never, { id: string, wbs: boolean }>;
-	private relevantOffersQuery?: sqlite.PreparedQuery<[string, string, number], never, { timestamp: number }>;
+	static dbMigrateVersion = 2;
+	static URL = Deno.env.get('DATABASE_URL') || env.DATABASE_URL;
+	private sql: Client;
 
 	constructor() {
-		this.db = new sqlite.DB(DataBase.DBName);
-
-		this.migrate();
-		this.prepareQueries();
+		this.sql = new Client(`${DataBase.URL}?sslmode=disable`);
 	}
 
-	private migrate() {
-		this.migrate_1();
+	async init() {
+		await this.sql.connect();
+		await this.migrate();
 	}
 
-	private migrate_1() {
-		this.db.execute(`
-      CREATE TABLE IF NOT EXISTS ${DataBase.FlatsTable} (
-        id UUID PRIMARY KEY  NOT NULL,
-        company TEXT  NOT NULL,
-        rent TEXT,
-        size TEXT,
-        rooms integer,
-        wbs boolean,
-        url varchar(255)  NOT NULL,
-        created_at integer  NOT NULL,
-        UNIQUE (url)
+	private async migrate() {
+		if (DataBase.dbMigrateVersion <=1) await this.migrate_1();
+	}
+
+	private async migrate_1() {
+		try {
+			const transaction = this.sql.createTransaction('migrate1');
+			await transaction.begin();
+
+			await transaction.queryArray /* sql */`
+			CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+			RETURNS TRIGGER AS $$
+			BEGIN
+				NEW.updated_at = NOW();
+				RETURN NEW;
+			END;
+			$$ LANGUAGE plpgsql;
+			`;
+
+			await transaction.queryArray /* sql */`
+			CREATE TABLE IF NOT EXISTS flats (
+				id uuid PRIMARY KEY NOT NULL,
+				company VARCHAR ( 50 ) UNIQUE NOT NULL,
+				rent VARCHAR ( 50 ),
+				size VARCHAR ( 50 ),
+				rooms INT,
+				wbs BOOLEAN,
+				url VARCHAR ( 255 ) UNIQUE NOT NULL,
+				created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+				updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+			`;
 
-      CREATE UNIQUE INDEX IF NOT EXISTS idx_${DataBase.FlatsTable}_url ON ${DataBase.FlatsTable} (url ASC);
-    `);
+			await transaction.queryArray /* sql */`
+			CREATE TRIGGER set_timestamp
+			BEFORE UPDATE ON flats
+			FOR EACH ROW
+			EXECUTE PROCEDURE trigger_set_timestamp();
+			`;
+
+			await transaction.queryArray /* sql */`
+			CREATE UNIQUE INDEX IF NOT EXISTS idx_flats_url ON flats (url ASC);
+			`;
+
+			await transaction.commit();
+		} catch (error) {
+			throw error;
+		}
 	}
 
-	private prepareQueries() {
-		this.createOfferQuery = this.db.prepareQuery<never, never, FlatsRow>(`
-      INSERT OR IGNORE INTO ${DataBase.FlatsTable} (
-        id, company, rent, size, rooms, url, created_at
-      ) VALUES (:id, :company, :rent, :size, :rooms, :url, :createdAt);
-    `);
-
-    this.updateOfferQuery = this.db.prepareQuery<never, never, { id: string, wbs: boolean }>(`
-      UPDATE ${DataBase.FlatsTable}
-      SET wbs = :wbs
-      WHERE id = :id;
-    `);
-
-		this.relevantOffersQuery = this.db.prepareQuery<[string, string, number], never, { timestamp: number }>(`
-      SELECT id, url, rooms FROM ${DataBase.FlatsTable}
-      WHERE created_at >= :timestamp;
-    `);
-	}
-
-	createOffer(company: string, offer: Offer) {
+	async createOffer(company: string, offer: Offer) {
 		const id = crypto.randomUUID();
-		const createdAt = Date.now();
-		const { rent, size, rooms, url } = offer;
 
-		this.createOfferQuery?.execute({ id, company, rent, size, rooms, url, createdAt });
+		await this.sql.queryArray`
+			INSERT OR IGNORE INTO flats (id, company, rent, size, rooms, url)
+			VALUES ('${id}', '${company}', '${offer.rent}', '${offer.size}', '${offer.rooms}', '${offer.url}')
+		`;
 	}
 
-  updateOffer(id: string, wbs: boolean) {
-    this.updateOfferQuery?.execute({ id, wbs });
-  }
-
-	getRelevantOffers(timestamp: number): [string, string, number][] {
-		return this.relevantOffersQuery?.all({ timestamp }) || [];
+	async updateOffer(id: string, wbs: boolean) {
+		await this.sql.queryArray`
+			UPDATE flats SET wbs = ${wbs} WHERE id = ${id}
+		`;
 	}
 
-	closeDb() {
-		this.db.close();
+	async getRelevantOffers(
+		timestamp: number,
+	): Promise<{ id: string; url: string; rooms: number }[]> {
+		const result = await this.sql.queryObject<{ id: string; url: string; rooms: number }>`
+			SELECT id, url, rooms FROM flats
+			WHERE created_at >= to_timestamp(${timestamp})
+		`;
+
+		return result.rows;
+	}
+
+	async end() {
+		await this.sql.end();
 	}
 }
