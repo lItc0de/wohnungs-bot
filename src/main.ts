@@ -1,54 +1,56 @@
-// import puppeteer from 'npm:puppeteer@^20';
-import { puppeteer } from '../deps.ts';
+import { puppeteer, type Browser, type Page, type LaunchOptions } from '../deps.ts';
 
 import DataBase from './database.ts';
 import WBM from './WBM.ts';
 import searchConfig from '../search-config.json' assert { type: 'json' };
 
 class FlatsBot {
-	private browser?: puppeteer.Browser;
-	private page?: puppeteer.Page;
+	private config: typeof searchConfig;
+	private isProd: boolean;
+	private db: DataBase;
+	private launchOptions: LaunchOptions = {};
+
+	private browser?: Browser;
+	private page?: Page;
+
 	private wbmBot?: WBM;
-	private db?: DataBase;
+
+	constructor(config: typeof searchConfig) {
+		this.config = config;
+		this.isProd = Deno.env.get('PRODUCTION') === 'true';
+		this.db = new DataBase();
+
+		if (this.isProd) this.launchOptions = {
+			executablePath: '/usr/bin/google-chrome',
+		}
+	}
 
 	async init(): Promise<void> {
-		const isProd = Deno.env.get('PRODUCTION');
-
-		if (isProd) {
-			this.browser = await puppeteer.default.launch({
-				executablePath: '/usr/bin/google-chrome',
-			});
-		} else {
-			this.browser = await puppeteer.default.launch();
-		}
-
-		// this.browser = await puppeteer.default.launch();
-		this.page = await this.browser.newPage();
-		this.db = new DataBase();
 		await this.db.init();
-
-		this.wbmBot = new WBM(this.page, searchConfig.searches[0], this.db);
+		this.browser = await puppeteer.launch(this.launchOptions);
 	}
 
 	async run(): Promise<void> {
-		await this.wbmBot?.run();
+		await this.init();
+		this.page = await this.browser?.newPage();
+
+		if (this.page == null) return;
+
+		this.wbmBot = new WBM(this.page, this.config, this.db);
+		await this.wbmBot.run();
+
+		await this.close();
 	}
 
 	async close(): Promise<void> {
+		await this.page?.close();
 		await this.browser?.close();
+		await this.db.close();
 	}
 }
 
-const run = async () => {
-	const bot = new FlatsBot();
+const bot = new FlatsBot(searchConfig);
 
-	await bot.init();
-	await bot.run();
-	await bot.close();
+await bot.run();
 
-	// await loop(() => new Promise(() => resolve));
-};
-
-run();
-
-setInterval(run, 5 * 60 * 1000);
+// setInterval(() => bot.run(), 5 * 60 * 1000);

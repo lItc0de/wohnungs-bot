@@ -17,7 +17,6 @@ export default class DataBase {
 
 	private async migrate() {
 		if (DataBase.dbMigrateVersion <= 1) await this.migrate_1();
-		if (DataBase.dbMigrateVersion <= 2) await this.migrate_2();
 	}
 
 	private async migrate_1() {
@@ -66,19 +65,12 @@ export default class DataBase {
 		}
 	}
 
-	private async migrate_2() {
-		await this.sql.queryArray`
-		ALTER TABLE flats
-		DROP CONSTRAINT flats_company_key;
-		`
-	}
-
 	async createOffer(company: string, offer: Offer) {
 		const id = crypto.randomUUID();
 
 		await this.sql.queryArray`
-			INSERT IGNORE INTO flats (id, company, rent, size, rooms, url)
-			VALUES ('${id}', '${company}', '${offer.rent}', '${offer.size}', '${offer.rooms}', '${offer.url}')
+			INSERT INTO flats (id, company, rent, size, rooms, url)
+			VALUES (${id}, ${company}, ${offer.rent}, ${offer.size}, ${offer.rooms}, ${offer.url})
 			ON CONFLICT (url) DO NOTHING;
 		`;
 	}
@@ -100,7 +92,7 @@ export default class DataBase {
 		return result.rows;
 	}
 
-	async end() {
+	async close() {
 		await this.sql.end();
 	}
 }

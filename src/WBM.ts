@@ -1,37 +1,18 @@
-import { puppeteer } from '../deps.ts';
-import searchConfig from '../search-config.json' assert { type: 'json' };
+import { type Page, type ElementHandle } from '../deps.ts';
+import BaseBot from './BaseBot.ts';
 import type DataBase from './database.ts';
-import { type Offer } from './definitions.d.ts';
-import { createScreenhot } from './utils.ts';
+import { type Offer, type Search, type Config, type FlatsRow, type Info } from './definitions.d.ts';
 
-export default class WBM {
-	static url = 'https://www.wbm.de/wohnungen-berlin/angebote/';
-	// static url = 'http://localhost:3000';
-	static wbsXSelect = '//*[contains(text(), "WBS erforderlich:")]/..';
-	static wbsTestRegexp = /WBS erforderlich:.*Nein/i;
-	static companyIdentifier = 'WBM';
-
-	private page: puppeteer.Page;
-	private config: typeof searchConfig.searches[0];
-	private db: DataBase;
-
-	constructor(page: puppeteer.Page, config: typeof searchConfig.searches[0], db: DataBase) {
-		this.page = page;
-		this.config = config;
-		this.db = db;
-	}
-
-	async visitMainPage(): Promise<void> {
-		await this.page.goto(WBM.url);
-	}
-
-	async visitOfferLink(offerLink: string): Promise<void> {
-		await this.page.goto(offerLink);
+export default class WBM extends BaseBot {
+	constructor(page: Page, config: Config, db: DataBase) {
+		const url = 'https://www.wbm.de/wohnungen-berlin/angebote/';
+		const companyIdentifier = 'WBM';
+		super(page, config, db, url, companyIdentifier);
 	}
 
 	async getAllOffers(): Promise<Offer[]> {
 		const offerElements =
-			(await this.page.$$('.row .openimmo-search-list-item')) as puppeteer.ElementHandle<
+			(await this.page.$$('.row .openimmo-search-list-item')) as ElementHandle<
 				HTMLDivElement
 			>[];
 
@@ -41,7 +22,7 @@ export default class WBM {
 			const offerElement = offerElements[i];
 
 			const mainPropertyList =
-				(await offerElement.$('ul.main-property-list')) as puppeteer.ElementHandle<
+				(await offerElement.$('ul.main-property-list')) as ElementHandle<
 					HTMLUListElement
 				>;
 
@@ -73,33 +54,28 @@ export default class WBM {
 		return offers;
 	}
 
-	async getRelevantOffers(timestamp: number): Promise<{ id: string; url: string }[]> {
-		return (await this.db.getRelevantOffers(timestamp))
-			// check number of rooms
-			.filter((offer) => offer.rooms >= 2 || Number.isNaN(offer.rooms))
-			// get links
-			.map((offer) => ({ id: offer.id, url: offer.url }));
-	}
-
 	async checkNoWbs(id: string): Promise<boolean> {
-		const wbsTextEl = await this.page.$x(WBM.wbsXSelect);
+		const wbsXSelect = '//*[contains(text(), "WBS erforderlich:")]/..';
+		const wbsTestRegexp = /WBS erforderlich:.*Nein/i;
+
+		const wbsTextEl = await this.page.$x(wbsXSelect);
 		const wbsText = await this.page.evaluate((el) => el.textContent, wbsTextEl[0]);
 
-		const noWbs = WBM.wbsTestRegexp.test(wbsText);
+		const noWbs = wbsTestRegexp.test(wbsText);
 		this.db.updateOffer(id, !noWbs);
 		return noWbs;
 	}
 
-	async fillForm(): Promise<void> {
-		await this.page.select('select#powermail_field_anrede', this.config.gender);
+	async fillForm(info: Info): Promise<void> {
+		await this.page.select('select#powermail_field_anrede', info.gender);
 
-		await this.page.type('input#powermail_field_name', this.config.name);
-		await this.page.type('input#powermail_field_vorname', this.config.surname);
-		await this.page.type('input#powermail_field_strasse', this.config.street);
-		await this.page.type('input#powermail_field_plz', this.config.plz);
-		await this.page.type('input#powermail_field_ort', this.config.city);
-		await this.page.type('input#powermail_field_e_mail', this.config.email);
-		await this.page.type('input#powermail_field_telefon', this.config.phone);
+		await this.page.type('input#powermail_field_name', info.name);
+		await this.page.type('input#powermail_field_vorname', info.surname);
+		await this.page.type('input#powermail_field_strasse', info.street);
+		await this.page.type('input#powermail_field_plz', info.plz);
+		await this.page.type('input#powermail_field_ort', info.city);
+		await this.page.type('input#powermail_field_e_mail', info.email);
+		await this.page.type('input#powermail_field_telefon', info.phone);
 
 		await this.page.waitForSelector('input#powermail_field_datenschutzhinweis_1');
 		await this.page.evaluate(() => {
@@ -112,43 +88,17 @@ export default class WBM {
 		await this.page.click('button[type="submit"]');
 	}
 
-	async storeOffers(offers: Offer[]): Promise<void> {
+	async applyForOffers(offers: { id: string; url: string }[], info: Info): Promise<void> {
 		for (let i = 0; i < offers.length; i++) {
-			console.log('offer', i);
-
-			await this.db.createOffer(WBM.companyIdentifier, offers[i]);
-
-			console.log('after offer', i);
-		}
-		// offers.forEach((offer) => {
-		// 	this.db.createOffer(WBM.companyIdentifier, offer);
-		// });
-	}
-
-	async run(): Promise<void> {
-		const currentTimestamp = Date.now();
-
-		await this.visitMainPage();
-
-		const offers = await this.getAllOffers();
-		await this.storeOffers(offers);
-
-		const relevantOffers = await this.getRelevantOffers(currentTimestamp);
-
-		console.log(relevantOffers);
-
-		for (let i = 0; i < relevantOffers.length; i++) {
-			const offer = relevantOffers[i];
-			console.log('lol:', offer);
+			const offer = offers[i];
 
 			await this.visitOfferLink(offer.url);
 
 			if (!this.checkNoWbs(offer.id)) return;
 
-			await this.fillForm();
+			await this.fillForm(info);
 
-		// 	await createScreenhot(this.page);
-		// 	// await this.submitForm();
+			await this.submitForm();
 		}
 	}
 }
