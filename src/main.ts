@@ -53,4 +53,4 @@ const bot = new FlatsBot(searchConfig);
 
 await bot.run();
 
-// setInterval(() => bot.run(), 5 * 60 * 1000);
+setInterval(() => bot.run(), 5 * 60 * 1000);

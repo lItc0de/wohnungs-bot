@@ -2,7 +2,7 @@ import { Client, env } from '../deps.ts';
 import { type Offer } from './definitions.d.ts';
 
 export default class DataBase {
-	static dbMigrateVersion = 2;
+	static dbMigrateVersion = 3;
 	static URL = Deno.env.get('DATABASE_URL') || env.DATABASE_URL;
 	private sql: Client;
 
@@ -17,6 +17,7 @@ export default class DataBase {
 
 	private async migrate() {
 		if (DataBase.dbMigrateVersion <= 1) await this.migrate_1();
+		if (DataBase.dbMigrateVersion <= 2) await this.migrate_2();
 	}
 
 	private async migrate_1() {
@@ -65,6 +66,13 @@ export default class DataBase {
 		}
 	}
 
+	async migrate_2() {
+		await this.sql.queryArray`
+		ALTER TABLE flats
+		ADD COLUMN applied BOOLEAN DEFAULT false
+		`
+	}
+
 	async createOffer(company: string, offer: Offer) {
 		const id = crypto.randomUUID();
 
@@ -90,6 +98,12 @@ export default class DataBase {
 		`;
 
 		return result.rows;
+	}
+
+	async updateApplied(offerId: string): Promise<void> {
+		await this.sql.queryArray`
+		UPDATE flats SET applied = ${true} WHERE id = ${offerId}
+		`;
 	}
 
 	async close() {

@@ -99,6 +99,8 @@ export default class WBM extends BaseBot {
 			await this.fillForm(info);
 
 			await this.submitForm();
+
+			await this.updateApplied(offer.id);
 		}
 	}
 }

@@ -88,6 +88,8 @@ export default class Degewo extends BaseBot {
 			await this.fillForm(info);
 
 			await this.submitForm();
+
+			await this.updateApplied(offer.id);
 		}
 	}
 }

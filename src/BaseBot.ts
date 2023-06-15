@@ -61,6 +61,10 @@ export default class BaseBot {
 
 	async applyForOffers(offers: { id: string; url: string }[], info: Info): Promise<void> {}
 
+	async updateApplied(offerid: string): Promise<void> {
+		await this.db.updateApplied(offerid);
+	}
+
 	async run(): Promise<void> {
 		const currentTimestamp = Date.now() / 1000;
 
