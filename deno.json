@@ -17,7 +17,7 @@
     "indentWidth": 2,
     "singleQuote": true,
     "proseWrap": "preserve",
-    "include": ["src/", "deps.ts"]
+    "include": ["src/", "deps.ts", "tests/"]
   },
   "compilerOptions": {
     "lib": [

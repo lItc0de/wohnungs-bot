@@ -57,7 +57,7 @@ Thumbs.db
 
 # Envoronment files
 .env
-*.env
+*.env.*
 
 # Other
 search-config.json

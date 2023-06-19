@@ -66,7 +66,7 @@ export default class BaseBot {
 	}
 
 	async run(): Promise<void> {
-		const currentTimestamp = Date.now() / 1000;
+		const currentTimestamp = Date.now();
 
 		console.log('Start searching for offers...');
 

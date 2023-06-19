@@ -4,7 +4,7 @@ import { type Offer } from './definitions.d.ts';
 export default class DataBase {
 	static dbMigrateVersion = 3;
 	static URL = Deno.env.get('DATABASE_URL') || env.DATABASE_URL;
-	private sql: Client;
+	sql: Client;
 
 	constructor() {
 		this.sql = new Client(`${DataBase.URL}?sslmode=disable`);
@@ -15,7 +15,7 @@ export default class DataBase {
 		await this.migrate();
 	}
 
-	private async migrate() {
+	async migrate() {
 		if (DataBase.dbMigrateVersion <= 1) await this.migrate_1();
 		if (DataBase.dbMigrateVersion <= 2) await this.migrate_2();
 	}
@@ -38,7 +38,7 @@ export default class DataBase {
 			await transaction.queryArray /* sql */`
 			CREATE TABLE IF NOT EXISTS flats (
 				id uuid PRIMARY KEY NOT NULL,
-				company VARCHAR ( 50 ) UNIQUE NOT NULL,
+				company VARCHAR ( 50 ) NOT NULL,
 				rent VARCHAR ( 50 ),
 				size VARCHAR ( 50 ),
 				rooms INT,
@@ -94,7 +94,7 @@ export default class DataBase {
 	): Promise<{ id: string; url: string; rooms: number }[]> {
 		const result = await this.sql.queryObject<{ id: string; url: string; rooms: number }>`
 			SELECT id, url, rooms FROM flats
-			WHERE created_at >= to_timestamp(${timestamp})
+			WHERE created_at >= to_timestamp(${timestamp  / 1000})
 		`;
 
 		return result.rows;
