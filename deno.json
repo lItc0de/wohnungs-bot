@@ -1,7 +1,8 @@
 {
   "tasks": {
     "dev": "deno run -A --watch src/main.ts",
-    "run": "deno run -A src/main.ts"
+    "run": "deno run -A src/main.ts",
+    "test": "deno test -A"
   },
   "lint": {
     "include": ["src/", "deps.ts"],

@@ -1,7 +1,7 @@
-import { type Page, type ElementHandle } from '../deps.ts';
+import { type ElementHandle, type Page } from '../deps.ts';
 import BaseBot from './BaseBot.ts';
 import type DataBase from './database.ts';
-import { type Offer, type Search, type Config, type FlatsRow, type Info } from './definitions.d.ts';
+import { type Config, type FlatsRow, type Info, type Offer, type Search } from './definitions.d.ts';
 
 export default class WBM extends BaseBot {
 	constructor(page: Page, config: Config, db: DataBase) {
@@ -11,20 +11,18 @@ export default class WBM extends BaseBot {
 	}
 
 	async getAllOffers(): Promise<Offer[]> {
-		const offerElements =
-			(await this.page.$$('.row .openimmo-search-list-item')) as ElementHandle<
-				HTMLDivElement
-			>[];
+		const offerElements = (await this.page.$$('.row .openimmo-search-list-item')) as ElementHandle<
+			HTMLDivElement
+		>[];
 
 		const offers: Offer[] = [];
 
 		for (let i = 0; i < offerElements.length; i++) {
 			const offerElement = offerElements[i];
 
-			const mainPropertyList =
-				(await offerElement.$('ul.main-property-list')) as ElementHandle<
-					HTMLUListElement
-				>;
+			const mainPropertyList = (await offerElement.$('ul.main-property-list')) as ElementHandle<
+				HTMLUListElement
+			>;
 
 			const rent = await mainPropertyList.$eval(
 				'div.main-property-rent.main-property-value',
@@ -79,8 +77,8 @@ export default class WBM extends BaseBot {
 
 		await this.page.waitForSelector('input#powermail_field_datenschutzhinweis_1');
 		await this.page.evaluate(() => {
-			const input = document.querySelector('input#powermail_field_datenschutzhinweis_1');
-			input?.parentElement?.click();
+			const input = document.getElementById('powermail_field_datenschutzhinweis_1') as HTMLInputElement;
+			input.click();
 		});
 	}
 
@@ -94,11 +92,13 @@ export default class WBM extends BaseBot {
 
 			await this.visitOfferLink(offer.url);
 
-			if (!this.checkNoWbs(offer.id)) return;
+			if (!(await this.checkNoWbs(offer.id))) return;
 
 			await this.fillForm(info);
 
 			await this.submitForm();
+
+			await this.page.waitForNavigation();
 
 			await this.updateApplied(offer.id);
 		}

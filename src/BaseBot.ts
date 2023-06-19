@@ -4,7 +4,7 @@ import type DataBase from './database.ts';
 import { type Info, type Offer } from './definitions.d.ts';
 
 export default class BaseBot {
-	protected url: string;
+	url: string;
 	protected companyIdentifier: string;
 
 	protected page: Page;
