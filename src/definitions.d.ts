@@ -3,6 +3,8 @@ export type Offer = {
 	size: string | null;
 	rooms: number;
 	url: string;
+	wbs?: boolean | null;
+	applied?: boolean | null;
 };
 
 export type FlatsRow = Offer & {

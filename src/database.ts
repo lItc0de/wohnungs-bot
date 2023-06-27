@@ -77,8 +77,8 @@ export default class DataBase {
 		const id = crypto.randomUUID();
 
 		await this.sql.queryArray`
-			INSERT INTO flats (id, company, rent, size, rooms, url)
-			VALUES (${id}, ${company}, ${offer.rent}, ${offer.size}, ${offer.rooms}, ${offer.url})
+			INSERT INTO flats (id, company, rent, size, rooms, url, wbs)
+			VALUES (${id}, ${company}, ${offer.rent}, ${offer.size}, ${offer.rooms}, ${offer.url}, ${offer.wbs})
 			ON CONFLICT (url) DO NOTHING;
 		`;
 	}

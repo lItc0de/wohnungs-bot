@@ -1,6 +1,6 @@
-import { path, puppeteer } from '../deps.ts';
+import { path, type Page } from '../deps.ts';
 
-export const createScreenhot = async (page: puppeteer.Page): Promise<void> => {
+export const createScreenhot = async (page: Page): Promise<void> => {
 	await page.screenshot({
 		path: path.join('screenshots', `${Date.now()}.jpeg`),
 		type: 'jpeg',

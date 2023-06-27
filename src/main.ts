@@ -3,6 +3,7 @@ import { puppeteer, type Browser, type Page, type LaunchOptions } from '../deps.
 import DataBase from './database.ts';
 import WBM from './WBM.ts';
 import searchConfig from '../search-config.json' assert { type: 'json' };
+import Degewo from './Degewo.ts';
 
 class FlatsBot {
 	private config: typeof searchConfig;
@@ -14,6 +15,7 @@ class FlatsBot {
 	private page?: Page;
 
 	private wbmBot?: WBM;
+	private degewoBot?: Degewo;
 
 	constructor(config: typeof searchConfig) {
 		this.config = config;
@@ -31,15 +33,26 @@ class FlatsBot {
 	}
 
 	async run(): Promise<void> {
+		console.log('🚀 Start');
+
 		await this.init();
 		this.page = await this.browser?.newPage();
 
 		if (this.page == null) return;
 
+		// WBM
+		console.log('🔎 WBM search');
 		this.wbmBot = new WBM(this.page, this.config, this.db);
 		await this.wbmBot.run();
 
+		// Degewo
+		console.log('🔎 Degewo search');
+		this.degewoBot = new Degewo(this.page, this.config, this.db);
+		await this.degewoBot.run();
+
 		await this.close();
+
+		console.log('✅ Finished');
 	}
 
 	async close(): Promise<void> {
@@ -53,4 +66,4 @@ const bot = new FlatsBot(searchConfig);
 
 await bot.run();
 
-setInterval(() => bot.run(), 5 * 60 * 1000);
+setInterval(() => bot.run(), 1 * 60 * 1000);

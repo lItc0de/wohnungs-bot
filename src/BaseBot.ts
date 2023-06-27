@@ -5,6 +5,7 @@ import { type Info, type Offer } from './definitions.d.ts';
 
 export default class BaseBot {
 	url: string;
+	runTimestamp: number;
 	protected companyIdentifier: string;
 
 	protected page: Page;
@@ -17,12 +18,14 @@ export default class BaseBot {
 		db: DataBase,
 		url: string,
 		companyIdentifier: string,
+		runTimestamp?: number,
 	) {
 		this.page = page;
 		this.config = config;
 		this.db = db;
 		this.url = url;
 		this.companyIdentifier = companyIdentifier;
+		this.runTimestamp = runTimestamp ?? Date.now();
 	}
 
 	async visitMainPage(): Promise<void> {
@@ -61,38 +64,42 @@ export default class BaseBot {
 
 	async applyForOffers(offers: { id: string; url: string }[], info: Info): Promise<void> {}
 
-	async updateApplied(offerid: string): Promise<void> {
-		await this.db.updateApplied(offerid);
+	async updateApplied(offerId: string): Promise<void> {
+		console.log('update applied');
+
+		await this.db.updateApplied(offerId);
+	}
+
+	resetTimestamp(): void {
+		this.runTimestamp = Date.now();
 	}
 
 	async run(): Promise<void> {
-		const currentTimestamp = Date.now();
-
 		console.log('Start searching for offers...');
 
 		await this.visitMainPage();
 
 		const offers = await this.getAllOffers();
 
-    // const offers = [
-    //   {company: 'WBM', rent: '345€', size: '34qm', rooms: 3, url: 'http://example.com/123'}
-    // ]
+		console.log(`Found ${offers.length} offers.`);
+		if (offers.length === 0) return;
 
-		console.log(`Found ${offers.length} offers. Storing...`);
-
+		console.log('Storing...');
 		await this.storeOffers(offers);
 
-		const relevantOffers = await this.getRelevantOffers(currentTimestamp);
+		const relevantOffers = await this.getRelevantOffers(this.runTimestamp);
 
-		console.log(`Applying for ${relevantOffers.length} relevant offers...`);
+		console.log(`Found ${relevantOffers.length} relevant offers`);
+
+		if (relevantOffers.length === 0) return;
 
 		const enabledSearches = this.config.searches.filter((search) => search.enabled);
-
-    console.log(`Applying for ${enabledSearches.length} searches...`);
-
+		console.log(`Applying for ${enabledSearches.length} searches...`);
 
 		for (let i = 0; i < enabledSearches.length; i++) {
 			const search = enabledSearches[i];
+			console.log(`Apply for ${search.info.name}`);
+
 			await this.applyForOffers(relevantOffers, search.info);
 		}
 

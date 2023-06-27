@@ -3,17 +3,19 @@ import searchConfig from '../search-config.json' assert { type: 'json' };
 import BaseBot from './BaseBot.ts';
 import type DataBase from './database.ts';
 import { type Info, type Offer } from './definitions.d.ts';
+import { createScreenhot } from './utils.ts';
 
 export default class Degewo extends BaseBot {
 	constructor(page: Page, config: typeof searchConfig, db: DataBase) {
 		const url =
-			'https://immosuche.degewo.de/de/search?size=10&page=1&property_type_id=1&categories%5B%5D=1&lat=&lon=&area=&address%5Bstreet%5D=&address%5Bcity%5D=&address%5Bzipcode%5D=&address%5Bdistrict%5D=&district=46%2C+28%2C+29%2C+60&property_number=&price_switch=true&price_radio=null&price_from=&price_to=&qm_radio=null&qm_from=&qm_to=&rooms_radio=3&rooms_from=&rooms_to=&wbs_required=false&order=rent_total_without_vat_asc';
+			'https://immosuche.degewo.de/de/search?size=10&page=1&property_type_id=1&categories%5B%5D=1&lat=&lon=&area=&address%5Bstreet%5D=&address%5Bcity%5D=&address%5Bzipcode%5D=&address%5Bdistrict%5D=&district=33%2C+46%2C+3%2C+28%2C+29%2C+71%2C+60&property_number=&price_switch=true&price_radio=null&price_from=&price_to=&qm_radio=null&qm_from=&qm_to=&rooms_radio=custom&rooms_from=2&rooms_to=4&wbs_required=&order=rent_total_without_vat_asc';
 		const companyIdentifier = 'Degewo';
 		super(page, config, db, url, companyIdentifier);
 	}
 
 	async visitOfferLink(offerLink: string): Promise<void> {
-		await this.page.goto(`https://immosuche.degewo.de${offerLink}`);
+		if (Deno.env.get('TEST') === 'true') await this.page.goto(offerLink);
+		else await this.page.goto(`https://immosuche.degewo.de${offerLink}`);
 	}
 
 	async getAllOffers(): Promise<Offer[]> {
@@ -37,6 +39,7 @@ export default class Degewo extends BaseBot {
 
 			const rooms = properties[0] !== null ? properties[0][0] : null;
 			const size = properties[1] !== null ? properties[1] : null;
+			const wbs = properties[3] === 'mit WBS' ? true : false;
 
 			const rent = await offerElement.$eval(
 				'span.price',
@@ -50,6 +53,7 @@ export default class Degewo extends BaseBot {
 				size,
 				rooms: Number(rooms),
 				url,
+				wbs,
 			};
 
 			offers.push(offer);
@@ -59,10 +63,15 @@ export default class Degewo extends BaseBot {
 	}
 
 	async fillForm(info: Info): Promise<void> {
-		await this.page.click('a[href=#kontakt]');
+		await this.page.waitForSelector('a[href="#kontakt"]');
+		await this.page.click('a[href="#kontakt"]');
+
+		await createScreenhot(this.page);
+
+		await this.page.waitForSelector('div.ant-select-selection__placeholder.ng-tns-c5-1.ng-star-inserted');
 
 		await this.page.click('div.ant-select-selection__placeholder.ng-tns-c5-1.ng-star-inserted');
-		const selectEl = await this.page.$x(`//a[contains(text(), Herr)]`);
+		const selectEl = await this.page.$x(`//a[contains(text(), ${info.gender})]`);
 		await selectEl[0].click();
 
 		await this.page.type('input#firstName', info.surname);
@@ -72,9 +81,8 @@ export default class Degewo extends BaseBot {
 	}
 
 	async submitForm(): Promise<void> {
-		await this.page.click('button[type="submit"]');
 		await this.page.$eval(
-			'form.application-form.ant-form.ant-form-vertical.ng-invalid.ng-star-inserted.ng-touched.ng-dirty',
+			'form.application-form.ant-form.ant-form-vertical',
 			(form: HTMLFormElement) => form.submit(),
 		);
 	}
