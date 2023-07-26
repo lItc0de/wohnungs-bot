@@ -70,4 +70,4 @@ const bot = new FlatsBot();
 
 await bot.run();
 
-// setInterval(() => bot.run(), 1 * 60 * 1000);
+setInterval(() => bot.run(), 1 * 60 * 1000);
