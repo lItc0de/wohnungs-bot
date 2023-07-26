@@ -1,8 +1,5 @@
 import {
 	puppeteer,
-	// env,
-	// ListObjectsV2Command,
-	// S3Client,
 	type Browser,
 	type LaunchOptions,
 	type Page,
@@ -73,4 +70,4 @@ const bot = new FlatsBot();
 
 await bot.run();
 
-setInterval(() => bot.run(), 1 * 60 * 1000);
+// setInterval(() => bot.run(), 1 * 60 * 1000);

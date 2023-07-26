@@ -43,6 +43,14 @@ export default class BaseBot {
 	}
 
 	async run(): Promise<void> {
+		try {
+			await this._run();
+		} catch (error) {
+			console.error(error);
+		}
+	}
+
+	private async _run(): Promise<void> {
 		console.log('Start searching for offers...');
 
 		await this.visitMainPage();

@@ -13,8 +13,10 @@ export default class Degewo extends BaseBot {
 	}
 
 	async visitOfferLink(offerLink: string): Promise<void> {
-		if (Deno.env.get('TEST') === 'true') await this.page.goto(offerLink);
-		else await this.page.goto(`https://immosuche.degewo.de${offerLink}`);
+		// if (Deno.env.get('TEST') === 'true') await this.page.goto(offerLink);
+		// else await this.page.goto(`https://immosuche.degewo.de${offerLink}`);
+
+		await this.page.goto(offerLink);
 	}
 
 	async getAllOffersFromPage(): Promise<Offer[]> {
