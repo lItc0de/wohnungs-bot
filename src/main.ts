@@ -15,7 +15,8 @@ class FlatsBot {
 	private launchOptions: LaunchOptions = {};
 
 	private browser?: Browser;
-	private page?: Page;
+	private pageWBM?: Page;
+	private pageDegewo?: Page;
 
 	private wbmBot?: WBM;
 	private degewoBot?: Degewo;
@@ -40,18 +41,19 @@ class FlatsBot {
 		console.log('🚀 Start');
 
 		await this.init();
-		this.page = await this.browser?.newPage();
+		this.pageWBM = await this.browser?.newPage();
+		this.pageDegewo = await this.browser?.newPage();
 
-		if (this.page == null) return;
+		if (this.pageWBM == null || this.pageDegewo == null) return;
 
 		// WBM
 		console.log('🔎 WBM search');
-		this.wbmBot = new WBM(this.page, this.db);
+		this.wbmBot = new WBM(this.pageWBM, this.db);
 		await this.wbmBot.run();
 
 		// Degewo
 		console.log('🔎 Degewo search');
-		this.degewoBot = new Degewo(this.page, this.db);
+		this.degewoBot = new Degewo(this.pageDegewo, this.db);
 		await this.degewoBot.run();
 
 		await this.close();
@@ -60,7 +62,8 @@ class FlatsBot {
 	}
 
 	async close(): Promise<void> {
-		await this.page?.close();
+		await this.pageWBM?.close();
+		await this.pageDegewo?.close();
 		await this.browser?.close();
 		await this.db.close();
 	}
