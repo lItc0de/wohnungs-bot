@@ -1,16 +1,16 @@
 import { type ElementHandle, type Page } from '../deps.ts';
 import BaseBot from './BaseBot.ts';
-import type DataBase from './database.ts';
-import { type Config, type FlatsRow, type Info, type Offer, type Search } from './definitions.d.ts';
+import type DataBase from './database/database.ts';
+import { Profile, type Offer } from './definitions.d.ts';
 
 export default class WBM extends BaseBot {
-	constructor(page: Page, config: Config, db: DataBase) {
+	constructor(page: Page, db: DataBase) {
 		const url = 'https://www.wbm.de/wohnungen-berlin/angebote/';
 		const companyIdentifier = 'WBM';
-		super(page, config, db, url, companyIdentifier);
+		super(page, db, url, companyIdentifier);
 	}
 
-	async getAllOffers(): Promise<Offer[]> {
+	async getAllOffersFromPage(): Promise<Offer[]> {
 		const offerElements = (await this.page.$$('.row .openimmo-search-list-item')) as ElementHandle<
 			HTMLDivElement
 		>[];
@@ -52,7 +52,15 @@ export default class WBM extends BaseBot {
 		return offers;
 	}
 
-	async checkNoWbs(id: string): Promise<boolean> {
+	async gatherAdditionalOfferInformation(): Promise<{ wbs?: boolean | null }> {
+		const additionalOfferInformation = {
+			wbs: !(await this.checkNoWbs()),
+		};
+
+		return additionalOfferInformation;
+	}
+
+	async checkNoWbs(): Promise<boolean> {
 		const wbsXSelect = '//*[contains(text(), "WBS erforderlich:")]/..';
 		const wbsTestRegexp = /WBS erforderlich:.*Nein/i;
 
@@ -60,24 +68,25 @@ export default class WBM extends BaseBot {
 		const wbsText = await this.page.evaluate((el) => el.textContent, wbsTextEl[0]);
 
 		const noWbs = wbsTestRegexp.test(wbsText);
-		this.db.updateOffer(id, !noWbs);
 		return noWbs;
 	}
 
-	async fillForm(info: Info): Promise<void> {
-		await this.page.select('select#powermail_field_anrede', info.gender);
+	async fillForm(profile: Profile): Promise<void> {
+		await this.page.select('select#powermail_field_anrede', profile.gender);
 
-		await this.page.type('input#powermail_field_name', info.name);
-		await this.page.type('input#powermail_field_vorname', info.surname);
-		await this.page.type('input#powermail_field_strasse', info.street);
-		await this.page.type('input#powermail_field_plz', info.plz);
-		await this.page.type('input#powermail_field_ort', info.city);
-		await this.page.type('input#powermail_field_e_mail', info.email);
-		await this.page.type('input#powermail_field_telefon', info.phone);
+		await this.page.type('input#powermail_field_name', profile.name);
+		await this.page.type('input#powermail_field_vorname', profile.surname);
+		await this.page.type('input#powermail_field_strasse', profile.street);
+		await this.page.type('input#powermail_field_plz', profile.plz);
+		await this.page.type('input#powermail_field_ort', profile.city);
+		await this.page.type('input#powermail_field_e_mail', profile.email);
+		await this.page.type('input#powermail_field_telefon', profile.phone);
 
 		await this.page.waitForSelector('input#powermail_field_datenschutzhinweis_1');
 		await this.page.evaluate(() => {
-			const input = document.getElementById('powermail_field_datenschutzhinweis_1') as HTMLInputElement;
+			const input = document.getElementById(
+				'powermail_field_datenschutzhinweis_1',
+			) as HTMLInputElement;
 			input.click();
 		});
 	}
@@ -86,21 +95,9 @@ export default class WBM extends BaseBot {
 		await this.page.click('button[type="submit"]');
 	}
 
-	async applyForOffers(offers: { id: string; url: string }[], info: Info): Promise<void> {
-		for (let i = 0; i < offers.length; i++) {
-			const offer = offers[i];
-
-			await this.visitOfferLink(offer.url);
-
-			if (!(await this.checkNoWbs(offer.id))) return;
-
-			await this.fillForm(info);
-
-			await this.submitForm();
-
-			await this.page.waitForNavigation();
-
-			await this.updateApplied(offer.id);
-		}
+	async applyForOffer(profile: Profile): Promise<boolean> {
+		await this.fillForm(profile);
+		await this.submitForm();
+		return true;
 	}
 }

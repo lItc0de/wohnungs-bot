@@ -1,8 +1,8 @@
 import { Client } from 'https://deno.land/x/postgres@v0.17.0/mod.ts';
+import { Profile } from '../../src/definitions.d.ts';
 
 const registerSignals = () => {
 	Deno.addSignalListener('SIGINT', cleanup);
-
 	Deno.addSignalListener('SIGTERM', cleanup);
 };
 
@@ -21,7 +21,29 @@ const createDB = async (): Promise<void> => {
 	await sql.end();
 };
 
-export const setup = async (withMigrate = true): Promise<void> => {
+export const profile: Profile = {
+	id: crypto.randomUUID(),
+	city: 'Berlin',
+	email: 'name@example.com',
+	gender: 'Frau',
+	maxRooms: 4,
+	minRooms: 2,
+	name: 'name',
+	phone: '+491439238572',
+	plz: '12938',
+	street: 'Berlinerstraße 27',
+	surname: 'Dino',
+	wbs: false,
+}
+
+const populateDB = async (sql: Client): Promise<void> => {
+  await sql.queryArray`
+		INSERT INTO profiles (id, city, email, gender, max_rooms, min_rooms, name, phone, plz, street, surname, wbs, enabled)
+		VALUES (${profile.id}, ${profile.city}, ${profile.email}, ${profile.gender}, ${profile.maxRooms}, ${profile.minRooms}, ${profile.name}, ${profile.phone}, ${profile.plz}, ${profile.street}, ${profile.surname}, ${profile.wbs}, true)
+	`;
+}
+
+export const setup = async (): Promise<void> => {
 	registerSignals();
 	await createDB();
 
@@ -31,45 +53,93 @@ export const setup = async (withMigrate = true): Promise<void> => {
 	const transaction = sql.createTransaction('setup');
 	await transaction.begin();
 
-	if (withMigrate) {
-		await transaction.queryArray /* sql */`
-    CREATE OR REPLACE FUNCTION trigger_set_timestamp()
-    RETURNS TRIGGER AS $$
-    BEGIN
-      NEW.updated_at = NOW();
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql;
-    `;
+	// Timestamp function
 
-		await transaction.queryArray /* sql */`
-    CREATE TABLE IF NOT EXISTS flats (
-      id uuid PRIMARY KEY NOT NULL,
-      company VARCHAR ( 50 ) NOT NULL,
-      rent VARCHAR ( 50 ),
-      size VARCHAR ( 50 ),
-      rooms INT,
-      wbs BOOLEAN,
-      url VARCHAR ( 255 ) UNIQUE NOT NULL,
-      applied BOOLEAN DEFAULT false,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    `;
+	await transaction.queryArray /* sql */`
+  CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql;
+  `;
 
-		await transaction.queryArray /* sql */`
-    CREATE TRIGGER set_timestamp
-    BEFORE UPDATE ON flats
-    FOR EACH ROW
-    EXECUTE PROCEDURE trigger_set_timestamp();
-    `;
+	// Flats table
 
-		await transaction.queryArray /* sql */`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_flats_url ON flats (url ASC);
-    `;
-	}
+	await transaction.queryArray /* sql */`
+  CREATE TABLE public.flats (
+    id uuid NOT NULL,
+    company varchar(50) NOT NULL,
+    rent varchar(50) NULL,
+    "size" varchar(50) NULL,
+    rooms int4 NULL,
+    wbs bool NULL,
+    url varchar(255) NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    applied bool NULL DEFAULT false,
+    is_new bool NOT NULL DEFAULT true,
+    CONSTRAINT flats_pkey PRIMARY KEY (id),
+    CONSTRAINT flats_url_key UNIQUE (url)
+  );
+  `;
+
+	await transaction.queryArray /* sql */`
+  CREATE UNIQUE INDEX idx_flats_url ON public.flats USING btree (url);
+  `;
+
+	await transaction.queryArray /* sql */`
+  CREATE TRIGGER set_timestamp
+  BEFORE UPDATE ON flats
+  FOR EACH ROW
+  EXECUTE PROCEDURE trigger_set_timestamp();
+  `;
+
+	// Profiles table
+
+	await transaction.queryArray /* sql */`
+  CREATE TABLE public.profiles (
+    id uuid NOT NULL PRIMARY KEY,
+    enabled bool NOT NULL DEFAULT false,
+    gender varchar(50) NOT NULL,
+    "name" varchar(50) NOT NULL,
+    surname varchar(50) NOT NULL,
+    street varchar(50) NOT NULL,
+    plz varchar(10) NOT NULL,
+    city varchar(50) NOT NULL,
+    email varchar(50) NOT NULL,
+    phone varchar(50) NOT NULL,
+    min_rooms int4 NOT NULL,
+    max_rooms int4 NOT NULL,
+    wbs bool NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+  );
+  `;
+
+	await transaction.queryArray /* sql */`
+  create trigger set_timestamp before
+  update
+      on
+      public.profiles for each row execute function trigger_set_timestamp();
+  `;
+
+	// FlatsProfiles table
+
+	await transaction.queryArray /* sql */`
+  CREATE TABLE public.flats_profiles (
+    flat_id uuid NOT NULL,
+    profile_id uuid NOT NULL,
+    CONSTRAINT flats_profiles_pk PRIMARY KEY (flat_id, profile_id),
+    CONSTRAINT flats_profiles_fk FOREIGN KEY (flat_id) REFERENCES public.flats(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT flats_profiles_fk_1 FOREIGN KEY (profile_id) REFERENCES public.profiles(id) ON DELETE CASCADE ON UPDATE CASCADE
+  );
+  `;
 
 	await transaction.commit();
+
+  await populateDB(sql);
 
 	await sql.end();
 };

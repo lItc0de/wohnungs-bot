@@ -1,12 +1,18 @@
-import { puppeteer, type Browser, type Page, type LaunchOptions } from '../deps.ts';
+import {
+	puppeteer,
+	// env,
+	// ListObjectsV2Command,
+	// S3Client,
+	type Browser,
+	type LaunchOptions,
+	type Page,
+} from '../deps.ts';
 
-import DataBase from './database.ts';
+import DataBase from './database/database.ts';
 import WBM from './WBM.ts';
-import searchConfig from '../search-config.json' assert { type: 'json' };
 import Degewo from './Degewo.ts';
 
 class FlatsBot {
-	private config: typeof searchConfig;
 	private isProd: boolean;
 	private db: DataBase;
 	private launchOptions: LaunchOptions = {};
@@ -17,13 +23,14 @@ class FlatsBot {
 	private wbmBot?: WBM;
 	private degewoBot?: Degewo;
 
-	constructor(config: typeof searchConfig) {
-		this.config = config;
+	constructor() {
 		this.isProd = Deno.env.get('PRODUCTION') === 'true';
 		this.db = new DataBase();
 
-		if (this.isProd) this.launchOptions = {
-			executablePath: '/usr/bin/google-chrome',
+		if (this.isProd) {
+			this.launchOptions = {
+				executablePath: '/usr/bin/google-chrome',
+			};
 		}
 	}
 
@@ -42,12 +49,12 @@ class FlatsBot {
 
 		// WBM
 		console.log('🔎 WBM search');
-		this.wbmBot = new WBM(this.page, this.config, this.db);
+		this.wbmBot = new WBM(this.page, this.db);
 		await this.wbmBot.run();
 
 		// Degewo
 		console.log('🔎 Degewo search');
-		this.degewoBot = new Degewo(this.page, this.config, this.db);
+		this.degewoBot = new Degewo(this.page, this.db);
 		await this.degewoBot.run();
 
 		await this.close();
@@ -62,7 +69,7 @@ class FlatsBot {
 	}
 }
 
-const bot = new FlatsBot(searchConfig);
+const bot = new FlatsBot();
 
 await bot.run();
 

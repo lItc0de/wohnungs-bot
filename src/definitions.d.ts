@@ -1,20 +1,21 @@
 export type Offer = {
-	rent: string | null;
-	size: string | null;
-	rooms: number;
 	url: string;
+	rooms: number;
+	rent?: string | null;
+	size?: string | null;
 	wbs?: boolean | null;
 	applied?: boolean | null;
+	appliedFor?: string | null;
 };
 
-export type FlatsRow = Offer & {
+export type DBOffer = Offer & {
 	id: string;
-	company: string;
-	createdAt: number;
+	company?: string;
 }
 
-export type Info = {
-	gender: string;
+export type Profile = {
+	id: string;
+	gender: 'Herr' | 'Frau';
 	name: string;
 	surname: string;
 	street: string;
@@ -22,13 +23,7 @@ export type Info = {
 	city: string;
 	email: string;
 	phone: string;
-}
-
-export type Search = {
-	enabled: boolean;
-	info: Info;
-}
-
-export type Config = {
-	searches: Search[]
+	minRooms: number;
+	maxRooms: number;
+	wbs: boolean;
 }
