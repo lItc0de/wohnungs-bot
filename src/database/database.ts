@@ -1,5 +1,5 @@
 import { Client, env } from '../../deps.ts';
-import { DBOffer, type Offer } from '../definitions.d.ts';
+import { AdditinalOfferInformation, DBOffer, type Offer } from '../definitions.d.ts';
 import Profiles from './profile.ts';
 
 export default class DataBase {
@@ -20,18 +20,27 @@ export default class DataBase {
 		const id = crypto.randomUUID();
 
 		await this.sql.queryArray`
-			INSERT INTO flats (id, company, rent, size, rooms, url, wbs)
-			VALUES (${id}, ${company}, ${offer.rent}, ${offer.size}, ${offer.rooms}, ${offer.url}, ${offer.wbs})
+			INSERT INTO flats (id, company, rent, size, rooms, url, wbs, street, zip, district)
+			VALUES (${id}, ${company}, ${offer.rent}, ${offer.size}, ${offer.rooms}, ${offer.url},
+				${offer.wbs}, ${offer.street}, ${offer.zip}, ${offer.district})
 			ON CONFLICT (url) DO NOTHING;
 		`;
 
 		return id;
 	}
 
-	async updateOffer(id: string, wbs: boolean | null) {
-		await this.sql.queryArray`
-			UPDATE flats SET wbs = ${wbs} WHERE id = ${id}
-		`;
+	async updateOffer(id: string, additionalOfferInformation: AdditinalOfferInformation) {
+		if (Object.keys(additionalOfferInformation).includes('wbs')) {
+			await this.sql.queryArray`
+				UPDATE flats SET wbs = ${additionalOfferInformation.wbs} WHERE id = ${id}
+			`;
+		}
+
+		if (Object.keys(additionalOfferInformation).includes('zip')) {
+			await this.sql.queryArray`
+				UPDATE flats SET zip = ${additionalOfferInformation.zip} WHERE id = ${id}
+			`;
+		}
 	}
 
 	async getNewOffers(

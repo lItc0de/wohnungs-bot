@@ -1,7 +1,7 @@
 import { type ElementHandle, type Page } from '../deps.ts';
 import BaseBot from './BaseBot.ts';
 import type DataBase from './database/database.ts';
-import { type Offer, Profile } from './definitions.d.ts';
+import { type Offer, Profile, AdditinalOfferInformation } from './definitions.d.ts';
 import { createScreenhot } from './utils.ts';
 
 export default class Degewo extends BaseBot {
@@ -47,14 +47,24 @@ export default class Degewo extends BaseBot {
 				(el: HTMLSpanElement) => el.textContent,
 			);
 
+			const address = await offerElement.$eval(
+				'span.article__meta',
+				(el: HTMLSpanElement) => el.textContent,
+			);
+			const match = address?.match(/^(.*)(?: \| )(.*)$/) || [];
+			const street = match[1] || null;
+			const district = match[2] || null;
+
 			const url = await offerElement.$eval('a', (el: HTMLLinkElement) => el.href);
 
-			const offer = {
+			const offer: Offer = {
 				rent,
 				size,
 				rooms: Number(rooms),
 				url,
 				wbs,
+				street,
+				district,
 			};
 
 			offers.push(offer);
@@ -90,8 +100,15 @@ export default class Degewo extends BaseBot {
 		);
 	}
 
-	async gatherAdditionalOfferInformation(): Promise<{ wbs?: boolean | null }> {
-		return await {};
+	async gatherAdditionalOfferInformation(): Promise<AdditinalOfferInformation> {
+		const address = await this.page.$eval(
+			'header.article__header>span.expose__meta', (el: HTMLSpanElement) => el.textContent
+		);
+
+		const match = address?.match(/^(?:.*\| )(\d*)(?:.*)$/) || [];
+		const zip = match[1] || null;
+
+		return { zip };
 	}
 
 	async applyForOffer(profile: Profile): Promise<boolean> {

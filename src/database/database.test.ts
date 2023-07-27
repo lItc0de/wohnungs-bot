@@ -1,7 +1,7 @@
 import { assertEquals } from 'https://deno.land/std@0.160.0/testing/asserts.ts';
 import { QueryObjectResult } from 'https://deno.land/x/postgres@v0.17.0/query/query.ts';
 import DataBase from './database.ts';
-import { cleanup, setup, profile } from '../../tests/helper/db_helper.ts';
+import { cleanup, profile, setup } from '../../tests/helper/db_helper.ts';
 import { Offer } from '../definitions.d.ts';
 
 // test setup
@@ -44,25 +44,30 @@ Deno.test('database', async (t) => {
 	});
 
 	await t.step('updateOffer', async () => {
-		const offerBeforeUpdate: QueryObjectResult<{ id: string; wbs: boolean }> = await db.sql
+		const offerBeforeUpdate: QueryObjectResult<{ id: string; wbs: boolean; zip: string }> = await db
+			.sql
 			.queryObject /* sql */`
-      SELECT id, wbs from flats
+      SELECT id, wbs, zip from flats
       WHERE id = ${offerNewId}
       ORDER BY created_at
     `;
 
 		assertEquals(null, offerBeforeUpdate.rows[0].wbs);
+		assertEquals(null, offerBeforeUpdate.rows[0].zip);
 		const wbs = true;
+		const zip = '12345';
 
-		await db.updateOffer(offerNewId, wbs);
+		await db.updateOffer(offerNewId, { wbs, zip });
 
-		const offerAfterUpdate: QueryObjectResult<{ wbs: boolean }> = await db.sql.queryObject`
-      SELECT wbs from flats
+		const offerAfterUpdate: QueryObjectResult<{ wbs: boolean; zip: string }> = await db.sql
+			.queryObject /* sql */`
+      SELECT wbs, zip from flats
       WHERE id = ${offerNewId}
       ORDER BY created_at
     `;
 
 		assertEquals(wbs, offerAfterUpdate.rows[0].wbs);
+		assertEquals(zip, offerAfterUpdate.rows[0].zip);
 	});
 
 	await t.step('getNewOffers', async () => {
@@ -76,7 +81,7 @@ Deno.test('database', async (t) => {
 				id: offerNewId,
 				rooms: offerNew.rooms,
 				url: offerNew.url,
-				wbs: true
+				wbs: true,
 			},
 		];
 
@@ -86,7 +91,8 @@ Deno.test('database', async (t) => {
 	await t.step('updateApplied', async () => {
 		await db.updateApplied(offerNewId, profile.id);
 
-		const flatsProfilesRow: QueryObjectResult<{ flatId: string, profileId: string }> = await db.sql.queryObject`
+		const flatsProfilesRow: QueryObjectResult<{ flatId: string; profileId: string }> = await db.sql
+			.queryObject`
       SELECT flat_id as "flatId", profile_id as "profileId" from flats_profiles
       WHERE flat_id = ${offerNewId}
     `;

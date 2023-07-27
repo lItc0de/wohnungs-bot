@@ -30,6 +30,10 @@ CREATE TABLE public.flats (
 	updated_at timestamptz NOT NULL DEFAULT now(),
 	applied bool NULL DEFAULT false,
 	is_new bool NOT NULL DEFAULT true,
+	street varchar(100) NULL,
+	district varchar(50) NULL,
+	zip varchar(10) NULL,
+	expose_url varchar(255) NULL,
 	CONSTRAINT flats_pkey PRIMARY KEY (id),
 	CONSTRAINT flats_url_key UNIQUE (url)
 );

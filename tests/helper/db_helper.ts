@@ -34,14 +34,14 @@ export const profile: Profile = {
 	street: 'Berlinerstraße 27',
 	surname: 'Dino',
 	wbs: false,
-}
+};
 
 const populateDB = async (sql: Client): Promise<void> => {
-  await sql.queryArray`
+	await sql.queryArray`
 		INSERT INTO profiles (id, city, email, gender, max_rooms, min_rooms, name, phone, plz, street, surname, wbs, enabled)
 		VALUES (${profile.id}, ${profile.city}, ${profile.email}, ${profile.gender}, ${profile.maxRooms}, ${profile.minRooms}, ${profile.name}, ${profile.phone}, ${profile.plz}, ${profile.street}, ${profile.surname}, ${profile.wbs}, true)
 	`;
-}
+};
 
 export const setup = async (): Promise<void> => {
 	registerSignals();
@@ -80,6 +80,10 @@ export const setup = async (): Promise<void> => {
     updated_at timestamptz NOT NULL DEFAULT now(),
     applied bool NULL DEFAULT false,
     is_new bool NOT NULL DEFAULT true,
+    street varchar(100) NULL,
+    district varchar(50) NULL,
+    zip varchar(10) NULL,
+    expose_url varchar(255) NULL,
     CONSTRAINT flats_pkey PRIMARY KEY (id),
     CONSTRAINT flats_url_key UNIQUE (url)
   );
@@ -139,7 +143,7 @@ export const setup = async (): Promise<void> => {
 
 	await transaction.commit();
 
-  await populateDB(sql);
+	await populateDB(sql);
 
 	await sql.end();
 };

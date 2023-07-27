@@ -1,6 +1,6 @@
 import { type Page } from '../deps.ts';
 import type DataBase from './database/database.ts';
-import { DBOffer, type Offer, type Profile } from './definitions.d.ts';
+import { AdditinalOfferInformation, DBOffer, type Offer, type Profile } from './definitions.d.ts';
 
 export default class BaseBot {
 	url: string;
@@ -73,13 +73,8 @@ export default class BaseBot {
 			const offer = newOffers[i];
 			await this.visitOfferLink(offer.url);
 			const additionalOfferInformation = await this.gatherAdditionalOfferInformation();
-			if (
-				Object.keys(additionalOfferInformation).includes('wbs') &&
-				additionalOfferInformation.wbs !== undefined
-			) {
-				await this.db.updateOffer(offer.id, additionalOfferInformation.wbs);
-				offer.wbs = additionalOfferInformation.wbs;
-			}
+			await this.db.updateOffer(offer.id, additionalOfferInformation);
+			newOffers[i] = {...offer, ...additionalOfferInformation};
 			await this.db.markOfferProcessed(offer.id);
 		}
 
@@ -113,8 +108,8 @@ export default class BaseBot {
 		return await [];
 	}
 
-	async gatherAdditionalOfferInformation(): Promise<{ wbs?: boolean | null }> {
-		return await { wbs: null };
+	async gatherAdditionalOfferInformation(): Promise<AdditinalOfferInformation> {
+		return await {};
 	}
 
 	async applyForOffer(profile: Profile): Promise<boolean> {

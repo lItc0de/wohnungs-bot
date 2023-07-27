@@ -35,6 +35,9 @@ const expectedOffers = [
 		url: offer1Url,
 		wbs: true,
 		appliedFor: null,
+		street: 'Käthe-Dorsch-Ring 1',
+		district: 'Neukölln',
+		zip: '12353',
 	},
 	{
 		rent: '305,06 €',
@@ -43,6 +46,9 @@ const expectedOffers = [
 		url: offer2Url,
 		wbs: true,
 		appliedFor: null,
+		street: 'Käthe-Dorsch-Ring 1',
+		district: 'Neukölln',
+		zip: '12353',
 	},
 	{
 		rent: '335,46 €',
@@ -51,6 +57,9 @@ const expectedOffers = [
 		url: offer3Url,
 		wbs: true,
 		appliedFor: null,
+		street: 'Käthe-Dorsch-Ring 1',
+		district: 'Neukölln',
+		zip: '12353',
 	},
 	{
 		rent: '403,08 €',
@@ -59,6 +68,9 @@ const expectedOffers = [
 		url: offer4Url,
 		wbs: false,
 		appliedFor: profile.id,
+		street: 'Theodor-Loos-Weg 17',
+		district: 'Neukölln',
+		zip: '12353',
 	},
 	{
 		rent: '519,40 €',
@@ -67,6 +79,9 @@ const expectedOffers = [
 		url: offer5Url,
 		wbs: false,
 		appliedFor: null,
+		street: 'Ludwig-Renn-Straße 64',
+		district: 'Marzahn-Hellersdorf',
+		zip: '12679',
 	},
 ];
 
@@ -90,13 +105,16 @@ await Deno.test('Degewo', async (t) => {
 				{
 					url: string;
 					rooms: number;
-					rent?: string | null;
-					size?: string | null;
-					wbs?: boolean | null;
-					appliedFor?: string | null;
+					rent: string | null;
+					size: string | null;
+					wbs: boolean | null;
+					appliedFor: string | null;
+					street: string | null;
+					zip: string | null;
+					district: string | null;
 				}
 			> /* sql */`
-        SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor" FROM flats
+        SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor", street, zip, district FROM flats
 				LEFT JOIN flats_profiles ON id = flat_id
         WHERE url = ANY(${offerUrls})
         ORDER BY created_at

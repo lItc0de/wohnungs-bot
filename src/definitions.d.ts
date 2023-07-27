@@ -2,6 +2,9 @@ export type Offer = {
 	url: string;
 	rooms: number;
 	rent?: string | null;
+	district?: string | null;
+	street?: string | null;
+	zip?: string | null;
 	size?: string | null;
 	wbs?: boolean | null;
 	applied?: boolean | null;
@@ -26,4 +29,9 @@ export type Profile = {
 	minRooms: number;
 	maxRooms: number;
 	wbs: boolean;
+}
+
+export type AdditinalOfferInformation = {
+	wbs?: boolean | null;
+	zip?: string | null;
 }

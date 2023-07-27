@@ -30,6 +30,9 @@ const expectedOffers = [
 		wbs: false,
 		appliedFor: profile.id,
 		isNew: false,
+		street: 'Auerstrasse 18',
+		zip: '10249',
+		district: 'Friedrichshain'
 	},
 
 	{
@@ -40,6 +43,9 @@ const expectedOffers = [
 		wbs: true,
 		appliedFor: null,
 		isNew: false,
+		street: 'Auerstrasse 18',
+		zip: '10249',
+		district: 'Friedrichshain'
 	},
 
 	{
@@ -50,6 +56,9 @@ const expectedOffers = [
 		wbs: false,
 		appliedFor: null,
 		isNew: false,
+		street: 'Auerstrasse 18',
+		zip: '10249',
+		district: 'Friedrichshain'
 	},
 ];
 
@@ -77,10 +86,13 @@ await Deno.test('WBM', async (t) => {
 					size: string | null;
 					wbs: boolean | null;
 					appliedFor: string | null;
-					isNew: boolean
+					isNew: boolean,
+					street: string | null;
+					zip: string | null;
+					district: string | null;
 				}
 			> /* sql */`
-        SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor", is_new as "isNew" FROM flats
+        SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor", is_new as "isNew", street, zip, district FROM flats
 				LEFT JOIN flats_profiles ON id = flat_id
         WHERE url = ANY(${offerUrls})
         ORDER BY created_at
