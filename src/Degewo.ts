@@ -1,7 +1,7 @@
 import { type ElementHandle, type Page } from '../deps.ts';
 import BaseBot from './BaseBot.ts';
 import type DataBase from './database/database.ts';
-import { type Offer, Profile, AdditinalOfferInformation } from './definitions.d.ts';
+import { AdditinalOfferInformation, type Offer, Profile } from './definitions.d.ts';
 import { createScreenhot } from './utils.ts';
 
 export default class Degewo extends BaseBot {
@@ -77,24 +77,31 @@ export default class Degewo extends BaseBot {
 		await this.page.waitForSelector('a[href="#kontakt"]');
 		await this.page.click('a[href="#kontakt"]');
 
-		await createScreenhot(this.page);
+		await this.page.waitForSelector('section#kontakt iframe');
+		const iframeEl = await this.page.$('section#kontakt iframe');
+		const frame = await iframeEl?.contentFrame();
 
-		await this.page.waitForSelector(
-			'div.ant-select-selection__placeholder.ng-tns-c5-1.ng-star-inserted',
-		);
+		if (frame == null) return;
 
-		await this.page.click('div.ant-select-selection__placeholder.ng-tns-c5-1.ng-star-inserted');
-		const selectEl = await this.page.$x(`//a[contains(text(), ${profile.gender})]`);
+		await frame.waitForSelector('nz-select.ng-tns-c3-0.ant-select');
+
+		await frame.click('nz-select.ng-tns-c3-0.ant-select');
+		const selectEl = await frame.$x(`//a[contains(text(), ${profile.gender})]`);
 		await selectEl[0].click();
 
-		await this.page.type('input#firstName', profile.surname);
-		await this.page.type('input#lastName', profile.name);
-		await this.page.type('input#email', profile.email);
-		await this.page.type('input#phone-number', profile.phone);
+		await frame.type('input#firstName', profile.surname);
+		await frame.type('input#lastName', profile.name);
+		await frame.type('input#email', profile.email);
+		await frame.type('input#phone-number', profile.phone);
 	}
 
 	async submitForm(): Promise<void> {
-		await this.page.$eval(
+		const iframeEl = await this.page.$('section#kontakt iframe');
+		const frame = await iframeEl?.contentFrame();
+
+		if (frame == null) return;
+
+		await frame.$eval(
 			'form.application-form.ant-form.ant-form-vertical',
 			(form: HTMLFormElement) => form.submit(),
 		);
@@ -102,7 +109,8 @@ export default class Degewo extends BaseBot {
 
 	async gatherAdditionalOfferInformation(): Promise<AdditinalOfferInformation> {
 		const address = await this.page.$eval(
-			'header.article__header>span.expose__meta', (el: HTMLSpanElement) => el.textContent
+			'header.article__header>span.expose__meta',
+			(el: HTMLSpanElement) => el.textContent,
 		);
 
 		const match = address?.match(/^(?:.*\| )(\d*)(?:.*)$/) || [];

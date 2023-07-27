@@ -63,7 +63,7 @@ export default class DataBase {
 
 	async markOfferProcessed(flatId: string) {
 		await this.sql.queryArray`
-			UPDATE flats SET is_new = FALSE WHERE id = ${flatId}
+			UPDATE flats SET is_new = false WHERE id = ${flatId}
 		`;
 	}
 

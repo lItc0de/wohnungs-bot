@@ -51,21 +51,21 @@ export default class BaseBot {
 	}
 
 	private async _run(): Promise<void> {
-		console.log('Start searching for offers...');
+		console.log(`${this.companyIdentifier}: Start searching for offers...`);
 
 		await this.visitMainPage();
 
 		const offers = await this.getAllOffersFromPage();
 
-		console.log(`Found ${offers.length} offers.`);
+		console.log(`${this.companyIdentifier}: Found ${offers.length} offers.`);
 		if (offers.length === 0) return;
 
-		console.log('Storing...');
+		console.log(`${this.companyIdentifier}: Storing...`);
 		await this.storeOffers(offers);
 
 		const newOffers = await this.db.getNewOffers(this.companyIdentifier);
 
-		console.log(`Found ${newOffers.length} new offers`);
+		console.log(`${this.companyIdentifier}: Found ${newOffers.length} new offers`);
 
 		if (newOffers.length === 0) return;
 
@@ -79,24 +79,24 @@ export default class BaseBot {
 		}
 
 		const enabledProfiles = await this.db.profiles.getEnabledProfiles();
-		console.log(`Applying for ${enabledProfiles.length} profiles...`);
+		console.log(`${this.companyIdentifier}: Applying for ${enabledProfiles.length} profiles...`);
 
 		for (let i = 0; i < enabledProfiles.length; i++) {
 			const profile = enabledProfiles[i];
-			console.log(`Apply for ${profile.name}`);
+			console.log(`${this.companyIdentifier}: Apply for ${profile.name}`);
 
 			for (let j = 0; j < newOffers.length; j++) {
 				const offer = newOffers[j];
 				if (!this.isOfferRelevant(offer, profile)) {
-					console.log(`Offer ${offer.id} not relevant. Skipping...`);
+					console.log(`${this.companyIdentifier}: Offer ${offer.id} not relevant. Skipping...`);
 					continue;
 				}
 
-				console.log(`Applying for offer ${offer.id}...`);
+				console.log(`${this.companyIdentifier}: Applying for offer ${offer.id}...`);
 				await this.visitOfferLink(offer.url);
 				const applied = await this.applyForOffer(profile);
 				if (applied) await this.db.updateApplied(offer.id, profile.id);
-				else 'Something went wrong...';
+				else `${this.companyIdentifier}: Something went wrong...`;
 			}
 		}
 

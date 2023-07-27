@@ -1,9 +1,4 @@
-import {
-	puppeteer,
-	type Browser,
-	type LaunchOptions,
-	type Page,
-} from '../deps.ts';
+import { type Browser, Cron, type LaunchOptions, type Page, puppeteer } from '../deps.ts';
 
 import DataBase from './database/database.ts';
 import WBM from './WBM.ts';
@@ -21,6 +16,9 @@ class FlatsBot {
 	private wbmBot?: WBM;
 	private degewoBot?: Degewo;
 
+	private wbmTask?: Cron;
+	private degewoTask?: Cron;
+
 	constructor() {
 		this.isProd = Deno.env.get('PRODUCTION') === 'true';
 		this.db = new DataBase();
@@ -37,33 +35,49 @@ class FlatsBot {
 		this.browser = await puppeteer.launch(this.launchOptions);
 	}
 
-	async run(): Promise<void> {
-		console.log('🚀 Start');
-
-		await this.init();
+	private async runWBM(): Promise<void> {
 		this.pageWBM = await this.browser?.newPage();
-		this.pageDegewo = await this.browser?.newPage();
+		if (this.pageWBM == null) return;
 
-		if (this.pageWBM == null || this.pageDegewo == null) return;
-
-		// WBM
-		console.log('🔎 WBM search');
 		this.wbmBot = new WBM(this.pageWBM, this.db);
-		await this.wbmBot.run();
 
-		// Degewo
-		// console.log('🔎 Degewo search');
-		// this.degewoBot = new Degewo(this.pageDegewo, this.db);
+		// run every 30 secs
+		this.wbmTask = new Cron('*/30 * 5-21 * * *', { timezone: 'Europe/Berlin' }, async () => {
+			console.log('WBM: 🔎 search');
+			await this.wbmBot?.run();
+			console.log('WBM: ✅ Finished');
+		});
+	}
+
+	private async runDegewo(): Promise<void> {
+		this.pageDegewo = await this.browser?.newPage();
+		if (this.pageDegewo == null) return;
+
+		this.degewoBot = new Degewo(this.pageDegewo, this.db);
 		// await this.degewoBot.run();
 
-		await this.close();
+		// run every 5 mins
+		this.degewoTask = new Cron('0 */5 5-21 * * *', { timezone: 'Europe/Berlin' }, async () => {
+			console.log('Degewo: 🔎 search');
+			await this.degewoBot?.run();
+			console.log('Degewo: ✅ Finished');
+		});
+	}
 
-		console.log('✅ Finished');
+	async run(): Promise<void> {
+		console.log('🚀 Start');
+		await this.init();
+		this.runWBM();
+		// this.runDegewo();
 	}
 
 	async close(): Promise<void> {
+		this.wbmTask?.stop();
+		this.degewoTask?.stop();
+
 		await this.pageWBM?.close();
 		await this.pageDegewo?.close();
+
 		await this.browser?.close();
 		await this.db.close();
 	}
@@ -71,6 +85,10 @@ class FlatsBot {
 
 const bot = new FlatsBot();
 
-await bot.run();
+Deno.addSignalListener('SIGINT', () => {
+	console.log('interrupted!');
+	bot.close();
+	Deno.exit();
+});
 
-setInterval(() => bot.run(), 1 * 60 * 1000);
+bot.run();
