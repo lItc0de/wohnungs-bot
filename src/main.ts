@@ -52,9 +52,9 @@ class FlatsBot {
 		await this.wbmBot.run();
 
 		// Degewo
-		console.log('🔎 Degewo search');
-		this.degewoBot = new Degewo(this.pageDegewo, this.db);
-		await this.degewoBot.run();
+		// console.log('🔎 Degewo search');
+		// this.degewoBot = new Degewo(this.pageDegewo, this.db);
+		// await this.degewoBot.run();
 
 		await this.close();
 
