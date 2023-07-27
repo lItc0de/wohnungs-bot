@@ -1,7 +1,7 @@
 import { type ElementHandle, type Page } from '../deps.ts';
 import BaseBot from './BaseBot.ts';
 import type DataBase from './database/database.ts';
-import { Profile, type Offer, AdditinalOfferInformation } from './definitions.d.ts';
+import { AdditinalOfferInformation, type Offer, Profile } from './definitions.d.ts';
 
 export default class WBM extends BaseBot {
 	constructor(page: Page, db: DataBase) {
@@ -37,7 +37,10 @@ export default class WBM extends BaseBot {
 				(el: HTMLDivElement) => el.textContent,
 			);
 
-			const address = await offerElement.$eval('div.address', (el: HTMLDivElement) => el.textContent);
+			const address = await offerElement.$eval(
+				'div.address',
+				(el: HTMLDivElement) => el.textContent,
+			);
 			const match = address?.match(/^(.*)(?:, ?)(\d*)(?:.*)$/) || [];
 			const street = match[1] || null;
 			const zip = match[2] || null;
@@ -53,7 +56,7 @@ export default class WBM extends BaseBot {
 				url,
 				street,
 				zip,
-				district
+				district,
 			};
 
 			offers.push(offer);
@@ -63,8 +66,13 @@ export default class WBM extends BaseBot {
 	}
 
 	async gatherAdditionalOfferInformation(): Promise<AdditinalOfferInformation> {
+		const exposeUrl = await this.page.$eval(
+			'a.openimmo-detail__intro-expose-button.btn.download',
+			(el: HTMLLinkElement) => el.href,
+		);
 		const additionalOfferInformation = {
 			wbs: !(await this.checkNoWbs()),
+			exposeUrl,
 		};
 
 		return additionalOfferInformation;

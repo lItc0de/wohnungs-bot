@@ -44,24 +44,26 @@ Deno.test('database', async (t) => {
 	});
 
 	await t.step('updateOffer', async () => {
-		const offerBeforeUpdate: QueryObjectResult<{ id: string; wbs: boolean; zip: string }> = await db
+		const offerBeforeUpdate: QueryObjectResult<{ id: string; wbs: boolean; zip: string; exposeUrl: string }> = await db
 			.sql
 			.queryObject /* sql */`
-      SELECT id, wbs, zip from flats
+      SELECT id, wbs, zip, expose_url as "exposeUrl" from flats
       WHERE id = ${offerNewId}
       ORDER BY created_at
     `;
 
 		assertEquals(null, offerBeforeUpdate.rows[0].wbs);
 		assertEquals(null, offerBeforeUpdate.rows[0].zip);
+		assertEquals(null, offerBeforeUpdate.rows[0].exposeUrl);
 		const wbs = true;
 		const zip = '12345';
+		const exposeUrl = 'file:///expose/70161-b03b42f7ba876d4ea3604a279793ebef.pdf';
 
-		await db.updateOffer(offerNewId, { wbs, zip });
+		await db.updateOffer(offerNewId, { wbs, zip, exposeUrl });
 
-		const offerAfterUpdate: QueryObjectResult<{ wbs: boolean; zip: string }> = await db.sql
+		const offerAfterUpdate: QueryObjectResult<{ wbs: boolean; zip: string; exposeUrl: string }> = await db.sql
 			.queryObject /* sql */`
-      SELECT wbs, zip from flats
+      SELECT wbs, zip, expose_url as "exposeUrl" from flats
       WHERE id = ${offerNewId}
       ORDER BY created_at
     `;

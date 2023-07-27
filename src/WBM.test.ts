@@ -32,7 +32,8 @@ const expectedOffers = [
 		isNew: false,
 		street: 'Auerstrasse 18',
 		zip: '10249',
-		district: 'Friedrichshain'
+		district: 'Friedrichshain',
+		exposeUrl: 'file:///expose/70161-b03b42f7ba876d4ea3604a279793ebef.pdf',
 	},
 
 	{
@@ -45,7 +46,8 @@ const expectedOffers = [
 		isNew: false,
 		street: 'Auerstrasse 18',
 		zip: '10249',
-		district: 'Friedrichshain'
+		district: 'Friedrichshain',
+		exposeUrl: 'file:///expose/70161-b03b42f7ba876d4ea3604a279793ebef.pdf',
 	},
 
 	{
@@ -58,7 +60,8 @@ const expectedOffers = [
 		isNew: false,
 		street: 'Auerstrasse 18',
 		zip: '10249',
-		district: 'Friedrichshain'
+		district: 'Friedrichshain',
+		exposeUrl: 'file:///expose/70161-b03b42f7ba876d4ea3604a279793ebef.pdf',
 	},
 ];
 
@@ -86,13 +89,15 @@ await Deno.test('WBM', async (t) => {
 					size: string | null;
 					wbs: boolean | null;
 					appliedFor: string | null;
-					isNew: boolean,
+					isNew: boolean;
 					street: string | null;
 					zip: string | null;
 					district: string | null;
+					exposeUrl: string | null;
 				}
 			> /* sql */`
-        SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor", is_new as "isNew", street, zip, district FROM flats
+        SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor", is_new as "isNew",
+					street, zip, district, expose_url as "exposeUrl" FROM flats
 				LEFT JOIN flats_profiles ON id = flat_id
         WHERE url = ANY(${offerUrls})
         ORDER BY created_at

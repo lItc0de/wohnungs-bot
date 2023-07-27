@@ -34,4 +34,5 @@ export type Profile = {
 export type AdditinalOfferInformation = {
 	wbs?: boolean | null;
 	zip?: string | null;
+	exposeUrl?: string | null;
 }

@@ -41,6 +41,12 @@ export default class DataBase {
 				UPDATE flats SET zip = ${additionalOfferInformation.zip} WHERE id = ${id}
 			`;
 		}
+
+		if (Object.keys(additionalOfferInformation).includes('exposeUrl')) {
+			await this.sql.queryArray`
+				UPDATE flats SET expose_url = ${additionalOfferInformation.exposeUrl} WHERE id = ${id}
+			`;
+		}
 	}
 
 	async getNewOffers(
