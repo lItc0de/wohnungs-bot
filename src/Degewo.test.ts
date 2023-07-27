@@ -10,78 +10,36 @@ import { Offer } from './definitions.d.ts';
 Deno.env.set('TEST', 'true');
 DataBase.URL = 'postgres://test:test123@localhost:5432/test';
 
-const offer1Url = toFileUrl(resolve('tests/dummy-data/degewo/multiple-flats/wohnung1.html'))
+const offer1Url = toFileUrl(resolve('tests/dummy-data/degewo/wohnung1.html'))
 	.toString();
 
-const offer2Url = toFileUrl(resolve('tests/dummy-data/degewo/multiple-flats/wohnung2.html'))
+const offer2Url = toFileUrl(resolve('tests/dummy-data/degewo/wohnung2.html'))
 	.toString();
 
-const offer3Url = toFileUrl(resolve('tests/dummy-data/degewo/multiple-flats/wohnung3.html'))
-	.toString();
-
-const offer4Url = toFileUrl(resolve('tests/dummy-data/degewo/multiple-flats/wohnung4.html'))
-	.toString();
-
-const offer5Url = toFileUrl(resolve('tests/dummy-data/degewo/multiple-flats/wohnung5.html'))
-	.toString();
-
-const offerUrls = [offer1Url, offer2Url, offer3Url, offer4Url, offer5Url];
+const offerUrls = [offer1Url, offer2Url];
 
 const expectedOffers = [
 	{
-		rent: '298,83 €',
-		size: '31,2 m²',
+		rent: '346,03 €',
+		size: '53,4 m²',
 		rooms: 1,
 		url: offer1Url,
-		wbs: true,
+		wbs: false,
 		appliedFor: null,
-		street: 'Käthe-Dorsch-Ring 1',
+		street: 'Zwickauer Damm 12',
 		district: 'Neukölln',
 		zip: '12353',
 	},
 	{
-		rent: '305,06 €',
-		size: '31,2 m²',
-		rooms: 1,
-		url: offer2Url,
-		wbs: true,
-		appliedFor: null,
-		street: 'Käthe-Dorsch-Ring 1',
-		district: 'Neukölln',
-		zip: '12353',
-	},
-	{
-		rent: '335,46 €',
-		size: '35 m²',
-		rooms: 1,
-		url: offer3Url,
-		wbs: true,
-		appliedFor: null,
-		street: 'Käthe-Dorsch-Ring 1',
-		district: 'Neukölln',
-		zip: '12353',
-	},
-	{
-		rent: '403,08 €',
-		size: '42,9 m²',
+		rent: '477,96 €',
+		size: '79,7 m²',
 		rooms: 2,
-		url: offer4Url,
+		url: offer2Url,
 		wbs: false,
 		appliedFor: profile.id,
-		street: 'Theodor-Loos-Weg 17',
+		street: 'Zwickauer Damm 12',
 		district: 'Neukölln',
 		zip: '12353',
-	},
-	{
-		rent: '519,40 €',
-		size: '36,2 m²',
-		rooms: 1,
-		url: offer5Url,
-		wbs: false,
-		appliedFor: null,
-		street: 'Ludwig-Renn-Straße 64',
-		district: 'Marzahn-Hellersdorf',
-		zip: '12679',
 	},
 ];
 
@@ -94,7 +52,7 @@ await Deno.test('Degewo', async (t) => {
 	const browser = await puppeteer.launch();
 	const page = await browser.newPage();
 	const degewoBot = new Degewo(page, db);
-	degewoBot.url = toFileUrl(resolve('tests/dummy-data/degewo/multiple-flats/index.html'))
+	degewoBot.url = toFileUrl(resolve('tests/dummy-data/degewo/index.html'))
 		.toString();
 
 	await t.step('complete run', async (t) => {
