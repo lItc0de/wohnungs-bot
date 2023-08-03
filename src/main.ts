@@ -9,10 +9,6 @@ class FlatsBot {
 	private db: DataBase;
 	private launchOptions: LaunchOptions = {};
 
-	private browser?: Browser;
-	private pageWBM?: Page;
-	private pageDegewo?: Page;
-
 	private wbmBot?: WBM;
 	private degewoBot?: Degewo;
 
@@ -32,14 +28,10 @@ class FlatsBot {
 
 	async init(): Promise<void> {
 		await this.db.init();
-		this.browser = await puppeteer.launch(this.launchOptions);
 	}
 
-	private async runWBM(): Promise<void> {
-		this.pageWBM = await this.browser?.newPage();
-		if (this.pageWBM == null) return;
-
-		this.wbmBot = new WBM(this.pageWBM, this.db);
+	private runWBM() {
+		this.wbmBot = new WBM(this.db);
 
 		// run every 30 secs
 		this.wbmTask = new Cron('*/30 * 5-21 * * *', { timezone: 'Europe/Berlin' }, async () => {
@@ -49,11 +41,8 @@ class FlatsBot {
 		});
 	}
 
-	private async runDegewo(): Promise<void> {
-		this.pageDegewo = await this.browser?.newPage();
-		if (this.pageDegewo == null) return;
-
-		this.degewoBot = new Degewo(this.pageDegewo, this.db);
+	private runDegewo() {
+		this.degewoBot = new Degewo(this.db);
 		// await this.degewoBot.run();
 
 		// run every 5 mins
@@ -75,10 +64,6 @@ class FlatsBot {
 		this.wbmTask?.stop();
 		this.degewoTask?.stop();
 
-		await this.pageWBM?.close();
-		await this.pageDegewo?.close();
-
-		await this.browser?.close();
 		await this.db.close();
 	}
 }

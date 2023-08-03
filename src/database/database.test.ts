@@ -44,7 +44,9 @@ Deno.test('database', async (t) => {
 	});
 
 	await t.step('updateOffer', async () => {
-		const offerBeforeUpdate: QueryObjectResult<{ id: string; wbs: boolean; zip: string; exposeUrl: string }> = await db
+		const offerBeforeUpdate: QueryObjectResult<
+			{ id: string; wbs: boolean; zip: string; exposeUrl: string }
+		> = await db
 			.sql
 			.queryObject /* sql */`
       SELECT id, wbs, zip, expose_url as "exposeUrl" from flats
@@ -61,8 +63,9 @@ Deno.test('database', async (t) => {
 
 		await db.updateOffer(offerNewId, { wbs, zip, exposeUrl });
 
-		const offerAfterUpdate: QueryObjectResult<{ wbs: boolean; zip: string; exposeUrl: string }> = await db.sql
-			.queryObject /* sql */`
+		const offerAfterUpdate: QueryObjectResult<{ wbs: boolean; zip: string; exposeUrl: string }> =
+			await db.sql
+				.queryObject /* sql */`
       SELECT wbs, zip, expose_url as "exposeUrl" from flats
       WHERE id = ${offerNewId}
       ORDER BY created_at
@@ -74,7 +77,9 @@ Deno.test('database', async (t) => {
 
 	await t.step('getNewOffers', async () => {
 		offerOldId = await db.createOffer(companyIdentifier, offerOld);
-		await db.markOfferProcessed(offerOldId);
+		await db.sql.queryArray`
+			UPDATE flats SET is_new = false WHERE id = ${offerOldId}
+		`;
 
 		const newOffers = await db.getNewOffers(companyIdentifier);
 

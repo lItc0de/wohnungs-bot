@@ -36,14 +36,29 @@ export const profile: Profile = {
 	wbs: false,
 };
 
-const populateDB = async (sql: Client): Promise<void> => {
+export const profileWBS: Profile = {
+	id: crypto.randomUUID(),
+	city: 'Berlin',
+	email: 'name@example.com',
+	gender: 'Frau',
+	maxRooms: 4,
+	minRooms: 1,
+	name: 'WBS',
+	phone: '+491439238572',
+	plz: '12938',
+	street: 'Berlinerstraße 27',
+	surname: 'Dino',
+	wbs: true,
+};
+
+const populateDB = async (sql: Client, dbProfile: Profile): Promise<void> => {
 	await sql.queryArray`
 		INSERT INTO profiles (id, city, email, gender, max_rooms, min_rooms, name, phone, plz, street, surname, wbs, enabled)
-		VALUES (${profile.id}, ${profile.city}, ${profile.email}, ${profile.gender}, ${profile.maxRooms}, ${profile.minRooms}, ${profile.name}, ${profile.phone}, ${profile.plz}, ${profile.street}, ${profile.surname}, ${profile.wbs}, true)
+		VALUES (${dbProfile.id}, ${dbProfile.city}, ${dbProfile.email}, ${dbProfile.gender}, ${dbProfile.maxRooms}, ${dbProfile.minRooms}, ${dbProfile.name}, ${dbProfile.phone}, ${dbProfile.plz}, ${dbProfile.street}, ${dbProfile.surname}, ${dbProfile.wbs}, true)
 	`;
 };
 
-export const setup = async (): Promise<void> => {
+export const setup = async (dbProfile: Profile = profile): Promise<void> => {
 	registerSignals();
 	await createDB();
 
@@ -143,7 +158,7 @@ export const setup = async (): Promise<void> => {
 
 	await transaction.commit();
 
-	await populateDB(sql);
+  await populateDB(sql, dbProfile);
 
 	await sql.end();
 };

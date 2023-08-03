@@ -71,9 +71,7 @@ await Deno.test('WBM', async (t) => {
 	const db = new DataBase();
 	await db.init();
 
-	const browser = await puppeteer.launch();
-	const page = await browser.newPage();
-	const wbmBot = new WBM(page, db);
+	const wbmBot = new WBM(db);
 
 	wbmBot.url = toFileUrl(resolve('tests/dummy-data/wbm/multiple-flats/index.html')).toString();
 
@@ -107,8 +105,6 @@ await Deno.test('WBM', async (t) => {
 		});
 	});
 
-	await page.close();
-	await browser.close();
 	await db.close();
 	await cleanup();
 });
