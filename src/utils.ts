@@ -11,3 +11,11 @@ export const createScreenhot = async (page: Page): Promise<void> => {
 export const onlyUnique = (value: string, index: number, array: string[]) => {
 	return array.indexOf(value) === index;
 }
+
+export const logger = (...data: any[]) => {
+	const isProd = Deno.env.get('PRODUCTION') === 'true';
+	const isTest = Deno.env.get('TEST') === 'true';
+	if (isProd || isTest) return;
+
+	console.log(...data);
+}

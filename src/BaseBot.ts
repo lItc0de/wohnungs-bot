@@ -1,6 +1,12 @@
 import { type Browser, type Page, type LaunchOptions, puppeteer } from '../deps.ts';
 import type DataBase from './database/database.ts';
 import { AdditinalOfferInformation, DBOffer, type Offer, type Profile } from './definitions.d.ts';
+import { logger } from './utils.ts';
+
+const districtBlacklist = [
+	'Spandau',
+	'Buch'
+]
 
 export default class BaseBot {
 	private isProd: boolean;
@@ -30,11 +36,7 @@ export default class BaseBot {
 	}
 
 	protected async visitOfferLink(page: Page, offerLink: string): Promise<void> {
-		console.log(offerLink);
-
 		await page.goto(offerLink);
-		console.log('visited');
-
 	}
 
 	private async storeOffers(offers: Offer[]): Promise<void> {
@@ -73,15 +75,15 @@ export default class BaseBot {
 
 			const offers = await this.getAllOffersFromPage(page);
 
-			console.log(`${this.companyIdentifier}: Found ${offers.length} offers.`);
+			logger(`${this.companyIdentifier}: Found ${offers.length} offers.`);
 			if (offers.length === 0) return [];
 
-			console.log(`${this.companyIdentifier}: Storing...`);
+			logger(`${this.companyIdentifier}: Storing...`);
 			await this.storeOffers(offers);
 
 			newOffers = await this.db.getNewOffers(this.companyIdentifier);
 
-			console.log(`${this.companyIdentifier}: Found ${newOffers.length} new offers`);
+			logger(`${this.companyIdentifier}: Found ${newOffers.length} new offers`);
 
 			if (newOffers.length === 0) return [];
 
@@ -111,20 +113,20 @@ export default class BaseBot {
 
 		try {
 			const enabledProfiles = await this.db.profiles.getEnabledProfiles();
-			console.log(`${this.companyIdentifier}: Applying for ${enabledProfiles.length} profiles...`);
+			logger(`${this.companyIdentifier}: Applying for ${enabledProfiles.length} profiles...`);
 
 			for (let i = 0; i < enabledProfiles.length; i++) {
 				const profile = enabledProfiles[i];
-				console.log(`${this.companyIdentifier}: Apply for ${profile.name}`);
+				logger(`${this.companyIdentifier}: Apply for ${profile.name}`);
 
 				for (let j = 0; j < newOffers.length; j++) {
 					const offer = newOffers[j];
 					if (!this.isOfferRelevant(offer, profile)) {
-						console.log(`${this.companyIdentifier}: Offer ${offer.id} not relevant. Skipping...`);
+						logger(`${this.companyIdentifier}: Offer ${offer.id} not relevant. Skipping...`);
 						continue;
 					}
 
-					console.log(`${this.companyIdentifier}: Applying for offer ${offer.id}...`);
+					logger(`${this.companyIdentifier}: Applying for offer ${offer.id}...`);
 
 					await this.visitOfferLink(page, offer.url);
 					const applied = await this.applyForOffer(page, profile);
@@ -141,7 +143,7 @@ export default class BaseBot {
 	}
 
 	async run(): Promise<void> {
-		console.log(`${this.companyIdentifier}: Start searching for offers...`);
+		logger(`${this.companyIdentifier}: Start searching for offers...`);
 
 		try {
 			this.browser = await puppeteer.launch(this.launchOptions);
@@ -157,7 +159,7 @@ export default class BaseBot {
 			await this.db.markNewOffersProcessed(this.companyIdentifier);
 		}
 
-		console.log('Finished.');
+		logger(`${this.companyIdentifier}: Finished.`);
 	}
 
 	// to be implemented by children --->
