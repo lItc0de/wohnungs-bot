@@ -104,6 +104,8 @@ export default class BaseBot {
 	}
 
 	private async runApplyNewOffers(newOffers: DBOffer[]) {
+		if (newOffers.length === 0) return;
+
 		const page = await this.browser?.newPage();
 		if (page == null) return;
 
