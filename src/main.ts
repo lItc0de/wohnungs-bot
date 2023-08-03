@@ -5,9 +5,7 @@ import WBM from './WBM.ts';
 import Degewo from './Degewo.ts';
 
 class FlatsBot {
-	private isProd: boolean;
 	private db: DataBase;
-	private launchOptions: LaunchOptions = {};
 
 	private wbmBot?: WBM;
 	private degewoBot?: Degewo;
@@ -16,14 +14,7 @@ class FlatsBot {
 	private degewoTask?: Cron;
 
 	constructor() {
-		this.isProd = Deno.env.get('PRODUCTION') === 'true';
 		this.db = new DataBase();
-
-		if (this.isProd) {
-			this.launchOptions = {
-				executablePath: '/usr/bin/google-chrome',
-			};
-		}
 	}
 
 	async init(): Promise<void> {

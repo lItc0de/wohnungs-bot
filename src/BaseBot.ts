@@ -1,8 +1,11 @@
-import { type Browser, type Page, puppeteer } from '../deps.ts';
+import { type Browser, type Page, type LaunchOptions, puppeteer } from '../deps.ts';
 import type DataBase from './database/database.ts';
 import { AdditinalOfferInformation, DBOffer, type Offer, type Profile } from './definitions.d.ts';
 
 export default class BaseBot {
+	private isProd: boolean;
+	private launchOptions: LaunchOptions = {};
+
 	url: string;
 
 	protected companyIdentifier: string;
@@ -14,9 +17,16 @@ export default class BaseBot {
 		url: string,
 		companyIdentifier: string,
 	) {
+		this.isProd = Deno.env.get('PRODUCTION') === 'true';
 		this.db = db;
 		this.url = url;
 		this.companyIdentifier = companyIdentifier;
+
+		if (this.isProd) {
+			this.launchOptions = {
+				executablePath: '/usr/bin/google-chrome',
+			};
+		}
 	}
 
 	protected async visitOfferLink(page: Page, offerLink: string): Promise<void> {
@@ -132,7 +142,7 @@ export default class BaseBot {
 		console.log(`${this.companyIdentifier}: Start searching for offers...`);
 
 		try {
-			this.browser = await puppeteer.launch();
+			this.browser = await puppeteer.launch(this.launchOptions);
 
 			const newOffers = await this.runGatherNewOffers();
 			await this.runApplyNewOffers(newOffers);
