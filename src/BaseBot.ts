@@ -1,4 +1,4 @@
-import { type Browser, type Page, type LaunchOptions, puppeteer } from '../deps.ts';
+import { type Browser, type Page, type LaunchOptions, ConnectionError, puppeteer } from '../deps.ts';
 import type DataBase from './database/database.ts';
 import { AdditinalOfferInformation, DBOffer, type Offer, type Profile } from './definitions.d.ts';
 import { logger } from './utils.ts';
@@ -96,8 +96,10 @@ export default class BaseBot {
 				await this.db.updateOffer(offer.id, additionalOfferInformation);
 				newOffers[i] = { ...offer, ...additionalOfferInformation };
 			}
-		} catch (error) {
-			console.error('error while gathering information', error);
+		} catch (e) {
+			console.error('Error: while gathering information');
+			await page?.close();
+			throw e;
 		} finally {
 			await page?.close();
 		}
@@ -135,8 +137,10 @@ export default class BaseBot {
 					else `${this.companyIdentifier}: Something went wrong...`;
 				}
 			}
-		} catch (error) {
-			console.error('error while applying', error);
+		} catch (e) {
+			console.error('Error: while applying');
+			await page?.close();
+			throw e;
 		} finally {
 			await page?.close();
 		}
@@ -152,8 +156,14 @@ export default class BaseBot {
 			await this.runApplyNewOffers(newOffers);
 
 
-		} catch (error) {
-			console.error(error);
+		} catch (e) {
+			if (e instanceof ConnectionError) {
+				await this.db.sql.connect();
+				// retry
+				await this.run();
+			} else {
+				console.error(e);
+			}
 		} finally {
 			await this.cleanupPages();
 			await this.db.markNewOffersProcessed(this.companyIdentifier);
