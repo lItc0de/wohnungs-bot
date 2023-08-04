@@ -23,7 +23,7 @@ const expectedOffers = [
 		wbs: true,
 		appliedFor: profileWBS.id,
 		street: 'Wolfgang-Heinz-Straße 40',
-		district: 'Buch',
+		district: 'Buch1',
 		zip: '13125',
 	},
 ];

@@ -89,6 +89,7 @@ Deno.test('database', async (t) => {
 				rooms: offerNew.rooms,
 				url: offerNew.url,
 				wbs: true,
+				district: null
 			},
 		];
 

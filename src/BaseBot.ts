@@ -48,8 +48,9 @@ export default class BaseBot {
 	private isOfferRelevant(offer: DBOffer, profile: Profile): boolean {
 		const roomCheck = profile.minRooms <= offer.rooms && profile.maxRooms >= offer.rooms;
 		const wbsCheck = offer.wbs ? profile.wbs : true;
+		const districtCheck = !districtBlacklist.includes(offer.district || '');
 
-		return roomCheck && wbsCheck;
+		return roomCheck && wbsCheck && districtCheck;
 	}
 
 	private async cleanupPages() {

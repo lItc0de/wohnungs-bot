@@ -19,7 +19,10 @@ const offer2Url = toFileUrl(resolve('tests/dummy-data/wbm/multiple-flats/wohnung
 const offer3Url = toFileUrl(resolve('tests/dummy-data/wbm/multiple-flats/wohnung3.html'))
 	.toString();
 
-const offerUrls = [offer1Url, offer2Url, offer3Url];
+const offer4Url = toFileUrl(resolve('tests/dummy-data/wbm/multiple-flats/wohnung4.html'))
+	.toString();
+
+const offerUrls = [offer1Url, offer2Url, offer3Url, offer4Url];
 
 const expectedOffers = [
 	{
@@ -61,6 +64,20 @@ const expectedOffers = [
 		street: 'Auerstrasse 18',
 		zip: '10249',
 		district: 'Friedrichshain',
+		exposeUrl: 'file:///expose/70161-b03b42f7ba876d4ea3604a279793ebef.pdf',
+	},
+
+	{
+		rent: '800,34 €',
+		size: '84,44 m²',
+		rooms: 2,
+		url: offer4Url,
+		wbs: false,
+		appliedFor: null,
+		isNew: false,
+		street: 'Auerstrasse 18',
+		zip: '10249',
+		district: 'Spandau',
 		exposeUrl: 'file:///expose/70161-b03b42f7ba876d4ea3604a279793ebef.pdf',
 	},
 ];

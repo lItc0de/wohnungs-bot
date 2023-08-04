@@ -53,7 +53,7 @@ export default class DataBase {
 		companyIdentifier: string,
 	): Promise<DBOffer[]> {
 		const result = await this.sql.queryObject<DBOffer>`
-			SELECT id, url, rooms, wbs FROM flats
+			SELECT id, url, rooms, wbs, district FROM flats
 			WHERE company = ${companyIdentifier}
 			AND is_new = true
 		`;
