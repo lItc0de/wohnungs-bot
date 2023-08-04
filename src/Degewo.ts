@@ -12,9 +12,6 @@ export default class Degewo extends BaseBot {
 	}
 
 	async visitOfferLink(page: Page, offerLink: string): Promise<void> {
-		// if (Deno.env.get('TEST') === 'true') await page.goto(offerLink);
-		// else await page.goto(`https://immosuche.degewo.de${offerLink}`);
-
 		await page.goto(offerLink);
 	}
 
@@ -78,15 +75,21 @@ export default class Degewo extends BaseBot {
 
 		await page.waitForSelector('section#kontakt iframe');
 		const iframeEl = await page.$('section#kontakt iframe');
+
 		const frame = await iframeEl?.contentFrame();
 
 		if (frame == null) return;
 
+		await frame.waitForSelector('form.application-form');
 		await frame.waitForSelector('nz-select.ng-tns-c3-0.ant-select');
 
-		// await frame.click('nz-select.ng-tns-c3-0.ant-select');
-		// const selectEl = await frame.$x(`//a[contains(text(), ${profile.gender})]`);
-		// await selectEl[0].click();
+		const selectBtn = await frame.$('nz-select.ng-tns-c3-0.ant-select');
+		await selectBtn?.evaluate((el) => el.click());
+
+
+		await frame.waitForXPath(`//li[contains(text(), ${profile.gender})]`);
+		const selectEl = await frame.$x(`//li[contains(text(), ${profile.gender})]`);
+		await selectEl.at(0)?.evaluate((el) => el.click());
 
 		await frame.type('input#firstName', profile.surname);
 		await frame.type('input#lastName', profile.name);

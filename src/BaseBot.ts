@@ -98,10 +98,7 @@ export default class BaseBot {
 			}
 		} catch (e) {
 			console.error('Error: while gathering information');
-			await page?.close();
 			throw e;
-		} finally {
-			await page?.close();
 		}
 
 		return newOffers;
@@ -139,10 +136,7 @@ export default class BaseBot {
 			}
 		} catch (e) {
 			console.error('Error: while applying');
-			await page?.close();
 			throw e;
-		} finally {
-			await page?.close();
 		}
 	}
 
