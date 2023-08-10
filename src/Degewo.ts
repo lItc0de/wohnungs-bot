@@ -1,4 +1,4 @@
-import { type Browser, type ElementHandle, type Page } from '../deps.ts';
+import { type ElementHandle, type Page } from '../deps.ts';
 import BaseBot from './BaseBot.ts';
 import type DataBase from './database/database.ts';
 import { AdditinalOfferInformation, type Offer, Profile } from './definitions.d.ts';
@@ -87,8 +87,8 @@ export default class Degewo extends BaseBot {
 		await selectBtn?.evaluate((el) => el.click());
 
 
-		await frame.waitForXPath(`//li[contains(text(), ${profile.gender})]`);
-		const selectEl = await frame.$x(`//li[contains(text(), ${profile.gender})]`);
+		await frame.waitForXPath(`//li[contains(text(), "${profile.gender}")]`);
+		const selectEl = await frame.$x(`//li[contains(text(), "${profile.gender}")]`);
 		await selectEl.at(0)?.evaluate((el) => el.click());
 
 		await frame.type('input#firstName', profile.surname);

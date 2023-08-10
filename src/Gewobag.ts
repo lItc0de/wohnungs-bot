@@ -1,7 +1,8 @@
 import { type ElementHandle, type Page } from '../deps.ts';
 import BaseBot from './BaseBot.ts';
 import type DataBase from './database/database.ts';
-import { AdditinalOfferInformation, type Offer, Profile } from './definitions.d.ts';
+import { type Offer, Profile } from './definitions.d.ts';
+import { createScreenhot, timeout } from './utils.ts';
 
 const url =
 	'https://www.gewobag.de/fuer-mieter-und-mietinteressenten/mietangebote/?bezirke%5B%5D=charlottenburg-wilmersdorf&bezirke%5B%5D=charlottenburg-wilmersdorf-charlottenburg&bezirke%5B%5D=friedrichshain-kreuzberg&bezirke%5B%5D=friedrichshain-kreuzberg-friedrichshain&bezirke%5B%5D=friedrichshain-kreuzberg-kreuzberg&bezirke%5B%5D=neukoelln&bezirke%5B%5D=pankow&bezirke%5B%5D=pankow-prenzlauer-berg&bezirke%5B%5D=tempelhof-schoeneberg&bezirke%5B%5D=tempelhof-schoeneberg-schoeneberg&objekttyp%5B%5D=wohnung&gesamtmiete_von=&gesamtmiete_bis=&gesamtflaeche_von=&gesamtflaeche_bis=&zimmer_von=&zimmer_bis=&sort-by=recent';
@@ -13,7 +14,7 @@ export default class Gewobag extends BaseBot {
 	}
 
 	async getAllOffersFromPage(page: Page): Promise<Offer[]> {
-		const offerElements = (await page.$$('.row .openimmo-search-list-item')) as ElementHandle<
+		const offerElements = (await page.$$('article.angebot-big-layout')) as ElementHandle<
 			HTMLDivElement
 		>[];
 
@@ -22,34 +23,33 @@ export default class Gewobag extends BaseBot {
 		for (let i = 0; i < offerElements.length; i++) {
 			const offerElement = offerElements[i];
 
-			const mainPropertyList = (await offerElement.$('ul.main-property-list')) as ElementHandle<
-				HTMLUListElement
-			>;
-
-			const rent = await mainPropertyList.$eval(
-				'div.main-property-rent.main-property-value',
+			const rentRaw = await offerElement.$eval(
+				'tr.angebot-kosten > td',
 				(el: HTMLDivElement) => el.textContent,
 			);
-			const size = await mainPropertyList.$eval(
-				'div.main-property-size.main-property-value',
+			const rent = (rentRaw?.match(/^(?:ab )(.*)$/) || [null, null]).at(1)?.replace(/ ?€/, ' €');
+
+			const dimensionsRaw = await offerElement.$eval(
+				'tr.angebot-area > td',
 				(el: HTMLDivElement) => el.textContent,
 			);
-			const rooms = await mainPropertyList.$eval(
-				'div.main-property-rooms.main-property-value',
+			const dimensions = dimensionsRaw?.match(/^(\d)(?:.*\| )(.*)$/);
+			const size = dimensions?.at(2);
+			const rooms = dimensions?.at(1);
+
+			const addressRaw = await offerElement.$eval(
+				'address',
 				(el: HTMLDivElement) => el.textContent,
 			);
 
-			const address = await offerElement.$eval(
-				'div.address',
-				(el: HTMLDivElement) => el.textContent,
-			);
-			const match = address?.match(/^(.*)(?:, ?)(\d*)(?:.*)$/) || [];
-			const street = match[1] || null;
-			const zip = match[2] || null;
+			const address = addressRaw?.replaceAll(/\n/g, ' ').match(/^(.*)(?:, ?)(\d*)(?:.*\/)(.*)$/) || [];
+			const street = address.at(1)?.trim() || null;
+			const zip = address.at(2)?.trim() || null;
+			const district = address.at(3)?.trim() || null;
 
-			const district = await offerElement.$eval('div.area', (el: HTMLDivElement) => el.textContent);
+			const url = await offerElement.$eval('a.read-more-link', (el: HTMLLinkElement) => el.href);
 
-			const url = await offerElement.$eval('a[title="Details"]', (el: HTMLLinkElement) => el.href);
+			const wbs = (await offerElement.$('div.hexagon-icon.typ-wbs')) != null;
 
 			const offer: Offer = {
 				rent,
@@ -59,6 +59,7 @@ export default class Gewobag extends BaseBot {
 				street,
 				zip,
 				district,
+				wbs,
 			};
 
 			offers.push(offer);
@@ -67,57 +68,73 @@ export default class Gewobag extends BaseBot {
 		return offers;
 	}
 
-	async gatherAdditionalOfferInformation(page: Page): Promise<AdditinalOfferInformation> {
-		const exposeUrl = await page.$eval(
-			'a.openimmo-detail__intro-expose-button.btn.download',
-			(el: HTMLLinkElement) => el.href,
-		);
-		const additionalOfferInformation = {
-			wbs: !(await this.checkNoWbs(page)),
-			exposeUrl,
-		};
-
-		return additionalOfferInformation;
-	}
-
-	async checkNoWbs(page: Page): Promise<boolean> {
-		const wbsXSelect = '//*[contains(text(), "WBS erforderlich:")]/..';
-		const wbsTestRegexp = /WBS erforderlich:.*Nein/i;
-
-		const wbsTextEl = await page.$x(wbsXSelect);
-		const wbsText = await page.evaluate((el) => el.textContent, wbsTextEl[0]);
-
-		const noWbs = wbsTestRegexp.test(wbsText);
-		return noWbs;
-	}
-
 	async fillForm(page: Page, profile: Profile): Promise<void> {
-		await page.select('select#powermail_field_anrede', profile.gender);
+		await page.waitForSelector('div#BorlabsCookieBox');
+		page.click('a#CookieBoxSaveButton');
+		await page.waitForSelector('div#BorlabsCookieBox>div.borlabs-hide');
+		await timeout(1000);
 
-		await page.type('input#powermail_field_name', profile.name);
-		await page.type('input#powermail_field_vorname', profile.surname);
-		await page.type('input#powermail_field_strasse', profile.street);
-		await page.type('input#powermail_field_plz', profile.plz);
-		await page.type('input#powermail_field_ort', profile.city);
-		await page.type('input#powermail_field_e_mail', profile.email);
-		await page.type('input#powermail_field_telefon', profile.phone);
+		await page.click('button[data-tab="rental-contact"]');
+		await page.waitForSelector('div#rental-contact:not([disabled])');
 
-		await page.waitForSelector('input#powermail_field_datenschutzhinweis_1');
-		await page.evaluate(() => {
-			const input = document.getElementById(
-				'powermail_field_datenschutzhinweis_1',
-			) as HTMLInputElement;
-			input.click();
-		});
+		await page.waitForSelector('iframe#contact-iframe');
+		const iframeEL = await page.$('iframe#contact-iframe');
+		const frame = await iframeEL?.contentFrame();
+		if (frame == null) return;
+
+		await frame.waitForSelector('form.application-form');
+
+		await frame.waitForSelector('nz-select.ng-tns-c3-0.ant-select[formcontrolname="salutation"]');
+		const selectBtn = await frame.$('nz-select.ng-tns-c3-0.ant-select[formcontrolname="salutation"]');
+		await selectBtn?.evaluate((el) => el.click());
+
+		await createScreenhot(page);
+
+		await frame.waitForXPath(`//li[contains(text(), "${profile.gender}")]`);
+		const selectEl = await frame.$x(`//li[contains(text(), "${profile.gender}")]`);
+		await selectEl.at(0)?.evaluate((el) => el.click());
+
+		await frame.type('input#firstName', profile.surname);
+		await frame.type('input#lastName', profile.name);
+		await frame.type('input#email', profile.email);
+		await frame.type('input#phone-number', profile.phone);
+		await frame.type('input#street', profile.street.split(' ')[0]);
+		await frame.type('input#house-number', profile.street.split(' ')[1]);
+		await frame.type('input#house-number', profile.street.split(' ')[1]);
+		await frame.type('input#zip-code', profile.plz);
+		await frame.type('input#city', profile.city);
+		await frame.type('input#formly_2_input_gewobag_gesamtzahl_der_einziehenden_personen_erwachsene_und_kinder_0', '1');
+
+		await frame.waitForSelector('nz-select#formly_3_select_gewobag_fuer_wen_wird_die_wohnungsanfrage_gestellt_0');
+		const select2Btn = await frame.$('nz-select#formly_3_select_gewobag_fuer_wen_wird_die_wohnungsanfrage_gestellt_0');
+		await select2Btn?.evaluate((el) => el.click());
+		await frame.waitForXPath(`//li[contains(text(), "Für mich selbst oder meine Angehörigen")]`);
+		const select2El = await frame.$x(`//li[contains(text(), "Für mich selbst oder meine Angehörigen")]`);
+		await select2El.at(0)?.evaluate((el) => el.click());
+
+		const wbsLabels = await frame.$$('nz-radio-group[id="formly_4_radio_$$_wbs_available_$$_0"]>label');
+		if (profile.wbs) await wbsLabels.at(0)?.evaluate((el) => el.click());
+		else await wbsLabels.at(1)?.evaluate((el) => el.click());
+
+		const ageLabels = await frame.$$('nz-radio-group[id="formly_9_radio_gewobag_mindestalter_seniorenwohnhaus_erreicht_0"]>label');
+		await ageLabels.at(1)?.evaluate((el) => el.click());
+
+		const dataProtectionLabelEl = await frame.$('label#formly_12_checkbox_gewobag_datenschutzhinweis_bestaetigt_0');
+		dataProtectionLabelEl?.evaluate((el) => el.click());
+		await frame.waitForSelector('button[type="submit"]:not([disabled])');
 	}
 
 	async submitForm(page: Page): Promise<void> {
-		await page.click('button[type="submit"]');
+		const iframeEL = await page.$('iframe#contact-iframe');
+		const frame = await iframeEL?.contentFrame();
+		if (frame == null) return;
+
+		await frame.click('button[type="submit"]:not([disabled])');
 	}
 
 	async applyForOffer(page: Page, profile: Profile): Promise<boolean> {
 		await this.fillForm(page, profile);
-		await this.submitForm(page);
+		// await this.submitForm(page);
 		return true;
 	}
 }

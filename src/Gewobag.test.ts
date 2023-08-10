@@ -9,76 +9,76 @@ import Gewobag from './Gewobag.ts';
 Deno.env.set('TEST', 'true');
 DataBase.URL = 'postgres://test:test123@localhost:5432/test';
 
-// const offer1Url = toFileUrl(resolve('tests/dummy-data/gewobag/wohnung1.html'))
-// 	.toString();
+const offer1Url = toFileUrl(resolve('tests/dummy-data/gewobag/wohnung1.html'))
+	.toString();
 
-// const offer2Url = toFileUrl(resolve('tests/dummy-data/gewobag/wohnung2.html'))
-// 	.toString();
+const offer2Url = toFileUrl(resolve('tests/dummy-data/gewobag/wohnung2.html'))
+	.toString();
 
-// const offerUrls = [offer1Url, offer2Url];
+const offerUrls = [offer1Url, offer2Url];
 
-// const expectedOffers = [
-// 	{
-// 		rent: '346,03 €',
-// 		size: '53,4 m²',
-// 		rooms: 1,
-// 		url: offer1Url,
-// 		wbs: false,
-// 		appliedFor: null,
-// 		street: 'Zwickauer Damm 12',
-// 		district: 'Neukölln',
-// 		zip: '12353',
-// 	},
-// 	{
-// 		rent: '477,96 €',
-// 		size: '79,7 m²',
-// 		rooms: 2,
-// 		url: offer2Url,
-// 		wbs: false,
-// 		appliedFor: profile.id,
-// 		street: 'Zwickauer Damm 12',
-// 		district: 'Neukölln',
-// 		zip: '12353',
-// 	},
-// ];
+const expectedOffers = [
+	{
+		rent: '562,31 €',
+		size: '28,32 m²',
+		rooms: 2,
+		url: offer1Url,
+		wbs: false,
+		appliedFor: profile.id,
+		street: 'Schwielowseestr. 40',
+		district: 'Spandau1',
+		zip: '13599',
+	},
+	{
+		rent: '403,93 €',
+		size: '28,22 m²',
+		rooms: 1,
+		url: offer2Url,
+		wbs: true,
+		appliedFor: null,
+		street: 'Holtheimer Weg 25',
+		district: 'Steglitz-Zehlendorf',
+		zip: '12207',
+	},
+];
 
-// await Deno.test('Gewobag', async (t) => {
-// 	await setup();
+await Deno.test('Gewobag', async (t) => {
+	await setup();
 
-// 	const db = new DataBase();
-// 	await db.init();
+	const db = new DataBase();
+	await db.init();
 
-// 	const degewoBot = new Degewo(db);
-// 	degewoBot.url = toFileUrl(resolve('tests/dummy-data/degewo/index.html'))
-// 		.toString();
+	const gewobagBot = new Gewobag(db);
+	gewobagBot.url = toFileUrl(resolve('tests/dummy-data/gewobag/index.html'))
+		.toString();
 
-// 	await t.step('complete run', async (t) => {
-// 		await t.step('run', async () => {
-// 			await degewoBot.run();
+	await t.step('complete run', async (t) => {
+		await t.step('run', async () => {
+			await gewobagBot.run();
 
-// 			const databaseOffers = await db.sql.queryObject<
-// 				{
-// 					url: string;
-// 					rooms: number;
-// 					rent: string | null;
-// 					size: string | null;
-// 					wbs: boolean | null;
-// 					appliedFor: string | null;
-// 					street: string | null;
-// 					zip: string | null;
-// 					district: string | null;
-// 				}
-// 			> /* sql */`
-//         SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor", street, zip, district FROM flats
-// 				LEFT JOIN flats_profiles ON id = flat_id
-//         WHERE url = ANY(${offerUrls})
-//         ORDER BY created_at
-//       `;
+			const databaseOffers = await db.sql.queryObject<
+				{
+					url: string;
+					rooms: number;
+					rent: string | null;
+					size: string | null;
+					wbs: boolean | null;
+					appliedFor: string | null;
+					street: string | null;
+					zip: string | null;
+					district: string | null;
+				}
+			> /* sql */`
+        SELECT rent, size, rooms, url, wbs, profile_id as "appliedFor", street, zip, district FROM flats
+				LEFT JOIN flats_profiles ON id = flat_id
+        WHERE url = ANY(${offerUrls})
+        ORDER BY created_at
+      `;
 
-// 			assertEquals(databaseOffers.rows, expectedOffers);
-// 		});
-// 	});
+			assertEquals(databaseOffers.rows, expectedOffers);
+		});
+	});
 
-// 	await db.close();
-// 	await cleanup();
-// });
+	await db.close();
+	await cleanup();
+});

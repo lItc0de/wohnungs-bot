@@ -1,12 +1,19 @@
-import { type Browser, type Page, type LaunchOptions, ConnectionError, puppeteer } from '../deps.ts';
+import {
+	type Browser,
+	ConnectionError,
+	type LaunchOptions,
+	type Page,
+	puppeteer,
+} from '../deps.ts';
 import type DataBase from './database/database.ts';
 import { AdditinalOfferInformation, DBOffer, type Offer, type Profile } from './definitions.d.ts';
 import { logger } from './utils.ts';
 
 const districtBlacklist = [
 	'Spandau',
-	'Buch'
-]
+	'Buch',
+	'Steglitz-Zehlendorf',
+];
 
 export default class BaseBot {
 	private isProd: boolean;
@@ -149,8 +156,6 @@ export default class BaseBot {
 
 			const newOffers = await this.runGatherNewOffers();
 			await this.runApplyNewOffers(newOffers);
-
-
 		} catch (e) {
 			if (e instanceof ConnectionError) {
 				await this.db.sql.connect();
